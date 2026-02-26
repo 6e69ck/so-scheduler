@@ -5,7 +5,7 @@ import { Edit2 } from 'lucide-react';
 interface Props {
   events: EventType[];
   onEditEvent: (e: EventType) => void;
-  onViewEvent: (e: EventType) => void;
+  onViewEvent?: (e: EventType) => void;
 }
 
 export default function SpreadsheetView({ events, onEditEvent, onViewEvent }: Props) {
@@ -35,7 +35,7 @@ export default function SpreadsheetView({ events, onEditEvent, onViewEvent }: Pr
           {events.map((e, i) => {
             const dateStr = new Date(e.date).toLocaleDateString();
             return (
-              <tr key={e._id || i} onClick={() => onViewEvent(e)} className="hover:bg-surface0/50 transition-colors cursor-pointer divide-x divide-surface0 border-b border-surface0">
+              <tr key={e._id || i} onClick={() => onViewEvent?.(e)} className="hover:bg-surface0/50 transition-colors cursor-pointer divide-x divide-surface0 border-b border-surface0">
                 <td className="px-4 py-3 font-medium text-text align-top">{e.show}</td>
                 <td className="px-4 py-3 text-subtext1 align-top">{dateStr}</td>
                 <td className="px-4 py-3 text-subtext1 align-top">{e.startTime} - {e.endTime}</td>

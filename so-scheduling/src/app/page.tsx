@@ -6,15 +6,20 @@ import SummaryView from '@/components/SummaryView';
 import EventModal from '@/components/EventModal';
 import ViewEventModal from '@/components/ViewEventModal';
 import { EventType } from '@/types';
-import { Calendar, Table, FileText } from 'lucide-react';
+import { Calendar, LayoutGrid, FileText, Loader2, Plus } from 'lucide-react';
+import moment from 'moment';
 
 export default function Home() {
   const [view, setView] = useState<'calendar' | 'spreadsheet' | 'summary'>('calendar');
   const [events, setEvents] = useState<EventType[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EventType | null>(null);
   const [viewingEvent, setViewingEvent] = useState<EventType | null>(null);
-  const [initialRange, setInitialRange] = useState<{ start?: Date, end?: Date }>({});
+  const [initialRange, setInitialRange] = useState<{ start: Date, end: Date } | undefined>();
+  
+  // Use local date string for selectedDate to match calendar display
+  const [selectedDate, setSelectedDate] = useState<string>(moment().format('YYYY-MM-DD'));
 
   const fetchEvents = async () => {
     try {
@@ -25,6 +30,8 @@ export default function Home() {
       }
     } catch (err) {
       console.error('Failed to fetch events', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -33,23 +40,21 @@ export default function Home() {
   }, []);
 
   const handleSaveEvent = async (event: EventType) => {
-    const isEditing = !!event._id;
-    const url = isEditing ? `/api/events/${event._id}` : '/api/events';
-    const method = isEditing ? 'PUT' : 'POST';
+    const method = event._id ? 'PUT' : 'POST';
+    const url = event._id ? `/api/events/${event._id}` : '/api/events';
 
     try {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(event)
+        body: JSON.stringify(event),
       });
+
       if (res.ok) {
+        fetchEvents();
         setIsModalOpen(false);
         setEditingEvent(null);
-        fetchEvents();
-      } else {
-        const data = await res.json();
-        alert('Error saving event: ' + data.error);
+        setViewingEvent(null);
       }
     } catch (err) {
       console.error('Failed to save event', err);
@@ -59,73 +64,118 @@ export default function Home() {
   const handleDeleteEvent = async (id: string) => {
     try {
       const res = await fetch(`/api/events/${id}`, { method: 'DELETE' });
-      if (res.ok) fetchEvents();
+      if (res.ok) {
+        fetchEvents();
+        setIsModalOpen(false);
+        setEditingEvent(null);
+        setViewingEvent(null);
+      }
     } catch (err) {
-      console.error('Failed to delete', err);
+      console.error('Failed to delete event', err);
     }
   };
 
-  const openNewModal = (start?: Date, end?: Date) => {
-    setEditingEvent(null);
-    setInitialRange({ start, end });
-    setIsModalOpen(true);
+  const handleViewEvent = (event: EventType) => {
+    // Jump to the day of the event using UTC to ensure it matches the stored date
+    const dateStr = moment.utc(event.date).format('YYYY-MM-DD');
+    setSelectedDate(dateStr);
+    setViewingEvent(event);
+    setView('summary');
   };
 
+  if (loading) {
+    return (
+      <div className="h-screen bg-base flex items-center justify-center text-text">
+        <Loader2 className="w-10 h-10 animate-spin text-accent" />
+      </div>
+    );
+  }
+
   return (
-    <div className="h-screen bg-base flex flex-col text-text font-sans">
-      {/* Primary Top Bar */}
-      <div className="bg-mantle border-b border-surface0 px-2 py-2 flex justify-between items-center shadow-sm shrink-0">
-        <h1 className="text-xl font-bold text-accent hidden sm:block">SO Scheduling</h1>
-        <div className="flex bg-crust rounded-lg p-1 w-full sm:w-auto border border-surface0">
+    <div className="h-screen bg-base flex flex-col text-text font-sans overflow-hidden">
+      {/* Header */}
+      <div className="bg-mantle border-b border-surface0 px-4 py-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0 shadow-lg relative z-30">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center shadow-lg shadow-accent/20">
+            <Calendar className="w-6 h-6 text-crust" />
+          </div>
+          <div>
+            <h1 className="text-xl font-black tracking-tighter text-text uppercase leading-none">Soaring<span className="text-accent">Eagles</span></h1>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-subtext0 font-bold mt-1">Admin Terminal</p>
+          </div>
+        </div>
+
+        <div className="flex bg-crust rounded-xl p-1 border border-surface0 shadow-inner">
           <button
             onClick={() => setView('calendar')}
-            className={`flex-1 sm:flex-none flex items-center justify-center px-3 py-1.5 rounded-md transition-colors ${view === 'calendar' ? 'bg-surface0 shadow text-accent' : 'text-subtext0 hover:text-text hover:bg-surface1/50'}`}
+            className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'calendar' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
           >
-            <Calendar className="w-4 h-4 sm:mr-2 pointer-events-none" />
-            <span className="hidden sm:inline">Calendar</span>
-          </button>
-          <button
-            onClick={() => setView('spreadsheet')}
-            className={`flex-1 sm:flex-none flex items-center justify-center px-3 py-1.5 rounded-md transition-colors ${view === 'spreadsheet' ? 'bg-surface0 shadow text-accent' : 'text-subtext0 hover:text-text hover:bg-surface1/50'}`}
-          >
-            <Table className="w-4 h-4 sm:mr-2 pointer-events-none" />
-            <span className="hidden sm:inline">Spreadsheet</span>
+            <Calendar className="w-4 h-4 mr-2" />
+            Calendar
           </button>
           <button
             onClick={() => setView('summary')}
-            className={`flex-1 sm:flex-none flex items-center justify-center px-3 py-1.5 rounded-md transition-colors ${view === 'summary' ? 'bg-surface0 shadow text-accent' : 'text-subtext0 hover:text-text hover:bg-surface1/50'}`}
+            className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'summary' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
           >
-            <FileText className="w-4 h-4 sm:mr-2 pointer-events-none" />
-            <span className="hidden sm:inline">Summary</span>
+            <FileText className="w-4 h-4 mr-2" />
+            Summary
           </button>
+          <button
+            onClick={() => setView('spreadsheet')}
+            className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'spreadsheet' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
+          >
+            <LayoutGrid className="w-4 h-4 mr-2" />
+            List
+          </button>
+        </div>
+
+        <button 
+          onClick={() => { setInitialRange(undefined); setEditingEvent(null); setIsModalOpen(true); }}
+          className="bg-accent hover:bg-accent-hover text-crust px-5 py-2.5 rounded-xl font-bold transition flex items-center shadow-lg shadow-accent/10 active:scale-95"
+        >
+          <Plus className="w-4 h-4 mr-2" /> New Show
+        </button>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 p-0 sm:p-4 md:p-6 overflow-hidden flex flex-col min-h-0 bg-base relative z-10">
+        <div className="flex-1 bg-mantle sm:rounded-2xl border-none sm:border border-surface0 shadow-2xl overflow-hidden relative">
+          {view === 'calendar' ? (
+            <CalendarView 
+              events={events} 
+              onEditEvent={(e) => { setEditingEvent(e); setIsModalOpen(true); }}
+              onViewEvent={handleViewEvent}
+              onCreateEvent={(start, end) => {
+                setInitialRange(start && end ? { start, end } : undefined);
+                setEditingEvent(null);
+                setIsModalOpen(true);
+              }}
+            />
+          ) : view === 'summary' ? (
+            <SummaryView 
+              events={events} 
+              onViewEvent={setViewingEvent}
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
+            />
+          ) : (
+            <SpreadsheetView 
+              events={events} 
+              onEditEvent={(e) => { setEditingEvent(e); setIsModalOpen(true); }} 
+              onViewEvent={handleViewEvent}
+            />
+          )}
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 p-2 overflow-hidden flex flex-col min-h-0">
-        {view === 'calendar' ? (
-          <CalendarView events={events} onEditEvent={(e) => { setEditingEvent(e); setIsModalOpen(true); }} onCreateEvent={openNewModal} onViewEvent={(e) => setViewingEvent(e)} />
-        ) : view === 'spreadsheet' ? (
-          <SpreadsheetView events={events} onEditEvent={(e) => { setEditingEvent(e); setIsModalOpen(true); }} onViewEvent={(e) => setViewingEvent(e)} />
-        ) : (
-          <SummaryView events={events} onViewEvent={(e) => setViewingEvent(e)} />
-        )}
-      </div>
-
-      {/* View Details Modal */}
       {viewingEvent && (
         <ViewEventModal 
           event={viewingEvent} 
           onClose={() => setViewingEvent(null)} 
-          onEdit={(e) => {
-            setViewingEvent(null);
-            setEditingEvent(e);
-            setIsModalOpen(true);
-          }}
+          onEdit={(e) => { setViewingEvent(null); setEditingEvent(e); setIsModalOpen(true); }} 
         />
       )}
 
-      {/* Event Modal */}
       {isModalOpen && (
         <EventModal
           event={editingEvent}
