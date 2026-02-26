@@ -1,15 +1,42 @@
 @import "tailwindcss";
 
 :root {
-  --background: #11111b;
+  --background: #1e1e2e;
   --foreground: #cdd6f4;
   --accent: #cba6f7;
+  
+  /* Catppuccin Mocha */
+  --base: #1e1e2e;
+  --mantle: #181825;
+  --crust: #11111b;
+  --text: #cdd6f4;
+  --subtext1: #bac2de;
+  --subtext0: #a6adc8;
+  --overlay2: #9399b2;
+  --overlay1: #7f849c;
+  --overlay0: #6c7086;
+  --surface2: #585b70;
+  --surface1: #45475a;
+  --surface0: #313244;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-accent: var(--accent);
+  
+  --color-base: var(--base);
+  --color-mantle: var(--mantle);
+  --color-crust: var(--crust);
+  --color-text: var(--text);
+  --color-subtext1: var(--subtext1);
+  --color-subtext0: var(--subtext0);
+  --color-overlay2: var(--overlay2);
+  --color-overlay1: var(--overlay1);
+  --color-overlay0: var(--overlay0);
+  --color-surface2: var(--surface2);
+  --color-surface1: var(--surface1);
+  --color-surface0: var(--surface0);
 }
 
 body {
@@ -18,26 +45,18 @@ body {
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
-/* Custom Scrollbar for dark theme */
-.custom-scrollbar::-webkit-scrollbar {
+/* Custom Scrollbar */
+::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: #11111b;
+::-webkit-scrollbar-track {
+  background: var(--base);
 }
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #313244;
+::-webkit-scrollbar-thumb {
+  background: var(--surface1);
   border-radius: 4px;
 }
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #45475a;
-}
-
-/* Big Calendar overrides */
-.rbc-calendar {
-  font-family: inherit;
+::-webkit-scrollbar-thumb:hover {
+  background: var(--surface2);
 }
