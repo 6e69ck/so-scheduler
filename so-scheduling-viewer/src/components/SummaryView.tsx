@@ -30,7 +30,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
   }, [highlightedEventId]);
 
   const filteredEvents = events.filter(e => {
-    const eventDate = moment(e.date);
+    const eventDate = moment.utc(e.date);
     if (viewType === 'day') {
       return eventDate.isSame(selectedDate, 'day');
     } else if (viewType === 'week') {
@@ -39,7 +39,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
       return eventDate.isSame(selectedDate, 'month');
     }
   }).sort((a, b) => {
-    const dateDiff = moment(a.date).diff(moment(b.date));
+    const dateDiff = moment.utc(a.date).diff(moment.utc(b.date));
     if (dateDiff !== 0) return dateDiff;
     return a.startTime.localeCompare(b.startTime);
   });
@@ -156,7 +156,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
                         </div>
                         <div>
                           <p className="text-[10px] uppercase tracking-tighter text-[#6c7086] font-bold leading-none mb-1">Date & Time</p>
-                          <p className="font-medium text-[#cdd6f4]">{moment(e.date).format('ddd, MMM D')} | {e.startTime} - {e.endTime}</p>
+                          <p className="font-medium text-[#cdd6f4]">{moment.utc(e.date).format('ddd, MMM D')} | {e.startTime} - {e.endTime}</p>
                         </div>
                       </div>
                       

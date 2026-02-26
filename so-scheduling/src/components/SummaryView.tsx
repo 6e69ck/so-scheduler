@@ -9,7 +9,7 @@ export default function SummaryView({ events, onViewEvent }: { events: EventType
   const [selectedDate, setSelectedDate] = useState(moment().format('YYYY-MM-DD'));
 
   const filteredEvents = events.filter(e => {
-    return moment(e.date).format('YYYY-MM-DD') === selectedDate;
+    return moment.utc(e.date).format('YYYY-MM-DD') === selectedDate;
   });
 
   const prevDate = () => {
