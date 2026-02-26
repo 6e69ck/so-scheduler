@@ -38,16 +38,16 @@ echo -e "${BLUE}>>> Updating PM2 processes...${NC}"
 pm2 delete $ADMIN_NAME 2>/dev/null
 pm2 delete $VIEWER_NAME 2>/dev/null
 
-# Start Admin
+# Start Admin using direct next binary call for reliability
 echo -e "${GREEN}>>> Starting $ADMIN_NAME on port $ADMIN_PORT...${NC}"
 cd so-scheduling
-pm2 start pnpm --name "$ADMIN_NAME" -- start -- -p $ADMIN_PORT
+pm2 start "npx next start -p $ADMIN_PORT" --name "$ADMIN_NAME"
 cd ..
 
-# Start Viewer
+# Start Viewer using direct next binary call for reliability
 echo -e "${GREEN}>>> Starting $VIEWER_NAME on port $VIEWER_PORT...${NC}"
 cd so-scheduling-viewer
-pm2 start pnpm --name "$VIEWER_NAME" -- start -- -p $VIEWER_PORT
+pm2 start "npx next start -p $VIEWER_PORT" --name "$VIEWER_NAME"
 cd ..
 
 # 5. Save PM2 state
