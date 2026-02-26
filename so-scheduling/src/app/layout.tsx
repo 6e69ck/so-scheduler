@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Roboto } from "next/font/google";
 import "./globals.css";
+import AuthWrapper from "@/components/AuthWrapper";
 
 const roboto = Roboto({
   weight: ['400', '500', '700'],
@@ -9,8 +10,8 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: "SO Scheduling",
-  description: "Scheduling App",
+  title: "Soaring Eagles Admin",
+  description: "Administrative Scheduling Terminal",
 };
 
 export default function RootLayout({
@@ -21,7 +22,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${roboto.variable} font-sans antialiased bg-base text-text min-h-screen`}>
-        {children}
+        <AuthWrapper>
+          {children}
+        </AuthWrapper>
       </body>
     </html>
   );
