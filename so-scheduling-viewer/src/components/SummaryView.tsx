@@ -155,7 +155,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
                           e.status === 'Completed' ? 'bg-[#89b4fa]/10 text-[#89b4fa]' : 
                           e.status === 'Planning' ? 'bg-[#f9e2af]/10 text-[#f9e2af]' : 
                           'bg-[#6c7086]/10 text-[#6c7086]'}
-                      `}>{e.status}</span>
+                      `}>{t(`statuses.${e.status}`)}</span>
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 sm:gap-y-3 gap-x-8 text-[11px] sm:text-sm">

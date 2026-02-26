@@ -124,7 +124,7 @@ export default function Home() {
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all border ${showPending ? 'bg-[#cba6f7]/10 border-[#cba6f7] text-[#cba6f7]' : 'bg-[#1e1e2e] border-[#313244] text-[#6c7086]'}`}
             >
               {showPending ? <Eye className="w-3 h-3 sm:w-4 h-4" /> : <EyeOff className="w-3 h-3 sm:w-4 h-4" />}
-              <span>{showPending ? t('all') : t('confirmed')}</span>
+              <span className="hidden sm:inline">{showPending ? t('all') : t('confirmed')}</span>
             </button>
           </div>
 

@@ -6,6 +6,7 @@ import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { EventType } from '@/types';
 import { ChevronLeft, ChevronRight, MapPin, Users } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const localizer = momentLocalizer(moment);
 
@@ -15,9 +16,9 @@ interface Props {
 }
 
 export default function CalendarView({ events, onEventClick }: Props) {
+  const t = useTranslations('Common');
   const [viewType, setViewType] = useState<View>(Views.WEEK);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedRange, setSelectedRange] = useState<{ start: Date, end: Date } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -46,33 +47,6 @@ export default function CalendarView({ events, onEventClick }: Props) {
     };
   });
 
-  if (selectedRange) {
-    const startStr = moment(selectedRange.start).format('h:mm A');
-    const endStr = moment(selectedRange.end).format('h:mm A');
-    rbcEvents.push({
-      id: 'temp-selection',
-      title: `${startStr} - ${endStr}`,
-      start: selectedRange.start,
-      end: selectedRange.end,
-      resource: { status: 'Selection' } as any,
-    });
-  }
-
-  const handleSelectSlot = (slotInfo: any) => {
-    setSelectedRange({ start: slotInfo.start, end: slotInfo.end });
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest('.rbc-event') && !target.closest('.rbc-slot-selection')) {
-        setSelectedRange(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const prevDate = () => {
     if (viewType === Views.DAY) setCurrentDate(moment(currentDate).subtract(1, 'day').toDate());
     if (viewType === Views.WEEK) {
@@ -90,17 +64,6 @@ export default function CalendarView({ events, onEventClick }: Props) {
   };
 
   const eventStyleGetter = (event: any) => {
-    if (event.id === 'temp-selection') {
-      return {
-        className: 'temp-selection-event',
-        style: {
-          backgroundColor: '#cba6f7', 
-          color: '#11111b',
-          display: 'block'
-        }
-      };
-    }
-
     const e = event.resource as EventType;
     const assigned = e.staff?.length || 0;
     const needed = e.neededPeople || 0;
@@ -131,7 +94,7 @@ export default function CalendarView({ events, onEventClick }: Props) {
   return (
     <div className="flex flex-col h-full relative w-full text-text" onClick={(e) => e.stopPropagation()}>
       <div className="flex flex-nowrap gap-2 justify-between items-center mb-4 bg-[#11111b] p-3 rounded-lg shadow-sm border border-[#313244] shrink-0 overflow-x-auto no-scrollbar">
-        <h2 className="text-xl font-bold text-[#cba6f7] shrink-0 hidden sm:block">Team Calendar</h2>
+        <h2 className="text-xl font-bold text-[#cba6f7] shrink-0 hidden sm:block">{t('calendar')}</h2>
 
         <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
           <div className="flex bg-[#181825] rounded-md p-1 border border-[#313244]">
@@ -152,9 +115,9 @@ export default function CalendarView({ events, onEventClick }: Props) {
               <button 
                 key={v}
                 onClick={() => setViewType(v as View)} 
-                className={`px-2 sm:px-3 py-1 rounded text-[10px] sm:text-sm font-bold transition-colors ${viewType === v ? 'bg-[#313244] text-[#cba6f7] shadow-sm' : 'text-[#a6adc8] hover:text-[#cdd6f4] hover:bg-[#313244]/50'}`}
+                className={`px-3 py-2 rounded text-[10px] sm:text-sm font-bold transition-colors ${viewType === v ? 'bg-[#313244] text-[#cba6f7] shadow-sm' : 'text-[#a6adc8] hover:text-[#cdd6f4] hover:bg-[#313244]/50'}`}
               >
-                <span className="hidden sm:inline">{v.charAt(0).toUpperCase() + v.slice(1)}</span>
+                <span className="hidden sm:inline">{v === 'day' ? t('day') : v === 'week' ? t('week') : t('month')}</span>
                 <span className="sm:hidden">{v.charAt(0).toUpperCase()}</span>
               </button>
             ))}
@@ -177,7 +140,6 @@ export default function CalendarView({ events, onEventClick }: Props) {
           max={new Date(0, 0, 0, 23, 59, 59)}
           selectable
           longPressThreshold={300}
-          onSelectSlot={handleSelectSlot}
           eventPropGetter={eventStyleGetter}
           toolbar={false}
           formats={{
@@ -229,7 +191,7 @@ export default function CalendarView({ events, onEventClick }: Props) {
           border-left: 1px solid #313244 !important; 
         }
         .rbc-time-content { border-top: 1px solid #313244 !important; }
-        .rbc-timeslot-group { border-bottom: 1px solid #313244 !important; min-height: 40px !important; }
+        .rbc-timeslot-group { border-bottom: 1px solid #313244 !important; min-height: 48px !important; }
         .rbc-time-slot { border-top: 1px solid rgba(49, 50, 68, 0.2) !important; }
         .rbc-time-gutter .rbc-timeslot-group { border-right: 1px solid #313244 !important; }
         .rbc-off-range-bg { background: #11111b !important; }

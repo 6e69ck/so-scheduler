@@ -17,9 +17,8 @@ export default function LanguageSwitcher() {
   return (
     <button
       onClick={toggleLanguage}
-      className="flex items-center gap-2 px-3 py-1.5 bg-crust border border-surface0 rounded-lg text-xs font-bold text-subtext0 hover:text-accent transition-all uppercase tracking-widest"
+      className="flex items-center px-3 py-2 bg-crust border border-surface0 rounded-lg text-xs font-black text-subtext0 hover:text-accent transition-all uppercase tracking-widest min-w-[40px] justify-center h-full"
     >
-      <Languages className="w-3.5 h-3.5" />
       {locale === 'en' ? 'EN' : 'ZH'}
     </button>
   );

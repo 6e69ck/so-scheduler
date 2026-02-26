@@ -23,6 +23,12 @@
     "phone": "电话",
     "email": "邮箱",
     "loading": "正在加载日程...",
-    "confirmRemove": "您确定要将 {name} 从此演出中移除吗？"
+    "confirmRemove": "您确定要将 {name} 从此演出中移除吗？",
+    "statuses": {
+      "None": "无",
+      "Planning": "计划中",
+      "Confirmed": "已确认",
+      "Completed": "已完成"
+    }
   }
 }

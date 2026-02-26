@@ -4,6 +4,10 @@
     "clientName": "客户名称",
     "companyName": "公司名称",
     "date": "日期",
+    "day": "日",
+    "week": "周",
+    "month": "月",
+    "time": "时间",
     "startTime": "开始时间",
     "endTime": "结束时间",
     "location": "地点",
@@ -53,6 +57,14 @@
     "termsTitle": "条款和条件",
     "loading": "加载中...",
     "confirmDelete": "您确定要删除此事件吗？",
-    "confirmRegen": "您确定要重新生成此{type}账单吗？旧链接仍将有效，但会创建一个新的快照。"
+    "confirmRegen": "您确定要重新生成此{type}账单吗？旧链接仍将有效，但会创建一个新的快照。",
+    "print": "打印",
+    "actions": "操作",
+    "statuses": {
+      "None": "无",
+      "Planning": "计划中",
+      "Confirmed": "已确认",
+      "Completed": "已完成"
+    }
   }
 }

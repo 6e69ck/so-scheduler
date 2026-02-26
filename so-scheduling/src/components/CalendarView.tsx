@@ -6,6 +6,7 @@ import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { EventType } from '@/types';
 import { Plus, Printer, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const localizer = momentLocalizer(moment);
 
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export default function CalendarView({ events, onEditEvent, onCreateEvent, onViewEvent }: Props) {
+  const t = useTranslations('Common');
   const [viewType, setViewType] = useState<View>(Views.WEEK);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedRange, setSelectedRange] = useState<{ start: Date, end: Date } | null>(null);
@@ -135,7 +137,7 @@ export default function CalendarView({ events, onEditEvent, onCreateEvent, onVie
           className="px-2.5 py-1.5 sm:px-4 sm:py-2 bg-accent hover:bg-accent-hover rounded-md flex items-center transition font-bold text-crust shrink-0"
         >
           <Plus className="w-4 h-4 sm:mr-2 pointer-events-none" /> 
-          <span className="hidden sm:inline">New Event</span>
+          <span className="hidden sm:inline">{t('newShow')}</span>
         </button>
 
         <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
@@ -154,19 +156,19 @@ export default function CalendarView({ events, onEditEvent, onCreateEvent, onVie
 
           <div className="flex bg-crust rounded-md p-1 border border-surface0">
             <button onClick={() => setViewType(Views.DAY)} className={`px-2 sm:px-3 py-1 rounded text-[10px] sm:text-sm font-bold transition-colors ${viewType === Views.DAY ? 'bg-surface0 text-accent shadow-sm' : 'text-subtext0 hover:text-text hover:bg-surface0/50'}`}>
-              <span className="hidden sm:inline">Day</span><span className="sm:hidden">D</span>
+              <span className="hidden sm:inline">{t('day')}</span><span className="sm:hidden">D</span>
             </button>
             <button onClick={() => setViewType(Views.WEEK)} className={`px-2 sm:px-3 py-1 rounded text-[10px] sm:text-sm font-bold transition-colors ${viewType === Views.WEEK ? 'bg-surface0 text-accent shadow-sm' : 'text-subtext0 hover:text-text hover:bg-surface0/50'}`}>
-              <span className="hidden sm:inline">Week</span><span className="sm:hidden">W</span>
+              <span className="hidden sm:inline">{t('week')}</span><span className="sm:hidden">W</span>
             </button>
             <button onClick={() => setViewType(Views.MONTH)} className={`px-2 sm:px-3 py-1 rounded text-[10px] sm:text-sm font-bold transition-colors ${viewType === Views.MONTH ? 'bg-surface0 text-accent shadow-sm' : 'text-subtext0 hover:text-text hover:bg-surface0/50'}`}>
-              <span className="hidden sm:inline">Month</span><span className="sm:hidden">M</span>
+              <span className="hidden sm:inline">{t('month')}</span><span className="sm:hidden">M</span>
             </button>
           </div>
         </div>
 
         <button onClick={() => window.print()} className="hidden md:flex bg-surface0 text-text px-3 py-1.5 rounded-md items-center hover:bg-surface1 transition font-bold border border-surface1 hover:text-accent shrink-0">
-          <Printer className="w-4 h-4 mr-2 pointer-events-none" /> <span>Print</span>
+          <Printer className="w-4 h-4 mr-2 pointer-events-none" /> <span>{t('print')}</span>
         </button>
       </div>
 

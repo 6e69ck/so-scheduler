@@ -125,7 +125,7 @@ export default function SummaryView({ events, onViewEvent, selectedDate, setSele
                           e.status === 'Completed' ? 'bg-blue/10 text-blue border-blue/20' : 
                           e.status === 'Planning' ? 'bg-yellow/10 text-yellow border-yellow/20' : 
                           'bg-surface1 text-subtext1 border-surface2'}
-                      `}>{e.status}</span>
+                      `}>{t(`statuses.${e.status}`)}</span>
                       <span className="text-[10px] text-subtext0 font-mono">#{String(e.eventNumber || 0).padStart(4, '0')}</span>
                     </div>
                     

@@ -7,7 +7,7 @@ import EventModal from '@/components/EventModal';
 import ViewEventModal from '@/components/ViewEventModal';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { EventType } from '@/types';
-import { Calendar, LayoutGrid, FileText, Loader2, Plus } from 'lucide-react';
+import { Calendar, LayoutGrid, FileText, Loader2 } from 'lucide-react';
 import moment from 'moment';
 import { useTranslations } from 'next-intl';
 
@@ -79,10 +79,11 @@ export default function Home() {
   };
 
   const handleViewEvent = (event: EventType) => {
+    // Jump to the day of the event using local format string
+    // but DON'T switch the view instantly
     const dateStr = moment(event.date).format('YYYY-MM-DD');
     setSelectedDate(dateStr);
     setViewingEvent(event);
-    setView('summary');
   };
 
   if (loading) {
@@ -133,13 +134,6 @@ export default function Home() {
               {t('list')}
             </button>
           </div>
-
-          <button 
-            onClick={() => { setInitialRange(undefined); setEditingEvent(null); setIsModalOpen(true); }}
-            className="bg-accent hover:bg-accent-hover text-crust px-5 py-2.5 rounded-xl font-bold transition flex items-center shadow-lg shadow-accent/10 active:scale-95"
-          >
-            <Plus className="w-4 h-4 mr-2" /> {t('newShow')}
-          </button>
         </div>
       </div>
 

@@ -23,6 +23,12 @@
     "phone": "Phone",
     "email": "Email",
     "loading": "Loading Schedule...",
-    "confirmRemove": "Are you sure you want to remove {name} from this show?"
+    "confirmRemove": "Are you sure you want to remove {name} from this show?",
+    "statuses": {
+      "None": "None",
+      "Planning": "Planning",
+      "Confirmed": "Confirmed",
+      "Completed": "Completed"
+    }
   }
 }
