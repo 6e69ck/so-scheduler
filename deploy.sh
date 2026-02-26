@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # --- Configuration ---
-ADMIN_PORT=3000
-VIEWER_PORT=3001
+ADMIN_PORT=3002
+VIEWER_PORT=3003
 ADMIN_NAME="so-admin"
 VIEWER_NAME="so-viewer"
 
