@@ -34,33 +34,27 @@ cd ..
 # 4. Manage PM2 Processes
 echo -e "${BLUE}>>> Updating PM2 processes...${NC}"
 
-# Check if Admin is running, if so restart, else start
-if pm2 show $ADMIN_NAME > /dev/null; then
-    echo -e "${GREEN}>>> Restarting $ADMIN_NAME...${NC}"
-    pm2 restart $ADMIN_NAME
-else
-    echo -e "${GREEN}>>> Starting $ADMIN_NAME for the first time...${NC}"
-    cd so-scheduling
-    PORT=$ADMIN_PORT pm2 start pnpm --name "$ADMIN_NAME" -- start
-    cd ..
-fi
+# Stop and delete existing to ensure clean port binding
+pm2 delete $ADMIN_NAME 2>/dev/null
+pm2 delete $VIEWER_NAME 2>/dev/null
 
-# Check if Viewer is running, if so restart, else start
-if pm2 show $VIEWER_NAME > /dev/null; then
-    echo -e "${GREEN}>>> Restarting $VIEWER_NAME...${NC}"
-    pm2 restart $VIEWER_NAME
-else
-    echo -e "${GREEN}>>> Starting $VIEWER_NAME for the first time...${NC}"
-    cd so-scheduling-viewer
-    PORT=$VIEWER_PORT pm2 start pnpm --name "$VIEWER_NAME" -- start
-    cd ..
-fi
+# Start Admin
+echo -e "${GREEN}>>> Starting $ADMIN_NAME on port $ADMIN_PORT...${NC}"
+cd so-scheduling
+pm2 start pnpm --name "$ADMIN_NAME" -- start -- -p $ADMIN_PORT
+cd ..
+
+# Start Viewer
+echo -e "${GREEN}>>> Starting $VIEWER_NAME on port $VIEWER_PORT...${NC}"
+cd so-scheduling-viewer
+pm2 start pnpm --name "$VIEWER_NAME" -- start -- -p $VIEWER_PORT
+cd ..
 
 # 5. Save PM2 state
 pm2 save
 
 echo -e "${GREEN}=========================================${NC}"
-echo -e "${GREEN}   DEPLOYMENT COMPLETED SUCCESSFULLYFUL   ${NC}"
+echo -e "${GREEN}   DEPLOYMENT COMPLETED SUCCESSFULLY      ${NC}"
 echo -e "${GREEN}   Admin: http://localhost:$ADMIN_PORT    ${NC}"
 echo -e "${GREEN}   Viewer: http://localhost:$VIEWER_PORT   ${NC}"
 echo -e "${GREEN}=========================================${NC}"
