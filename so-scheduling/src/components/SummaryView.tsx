@@ -20,32 +20,32 @@ export default function SummaryView({ events, onViewEvent, selectedDate, setSele
   const [viewType, setViewType] = useState<ViewType>('day');
 
   const filteredEvents = events.filter(e => {
-    // Use local time for comparison to match the calendar view and user expectation
-    const eventDateStr = moment(e.date).format('YYYY-MM-DD');
-    const targetDate = moment(selectedDate, 'YYYY-MM-DD');
-    const eventDate = moment(eventDateStr, 'YYYY-MM-DD');
+    // Standardize to UTC for filtering to prevent local timezone shifts
+    const eventDateStr = moment.utc(e.date).format('YYYY-MM-DD');
+    const targetMoment = moment.utc(selectedDate, 'YYYY-MM-DD');
+    const eventMoment = moment.utc(eventDateStr, 'YYYY-MM-DD');
     
     if (viewType === 'day') {
       return eventDateStr === selectedDate;
     } else if (viewType === 'week') {
-      return eventDate.isSame(targetDate, 'week');
+      return eventMoment.isSame(targetMoment, 'week');
     } else {
-      return eventDate.isSame(targetDate, 'month');
+      return eventMoment.isSame(targetMoment, 'month');
     }
   }).sort((a, b) => {
-    const dateA = moment(a.date).format('YYYY-MM-DD');
-    const dateB = moment(b.date).format('YYYY-MM-DD');
+    const dateA = moment.utc(a.date).format('YYYY-MM-DD');
+    const dateB = moment.utc(b.date).format('YYYY-MM-DD');
     if (dateA !== dateB) return dateA.localeCompare(dateB);
     return a.startTime.localeCompare(b.startTime);
   });
 
   const prevRange = () => {
-    const newDate = moment(selectedDate, 'YYYY-MM-DD').subtract(1, viewType).format('YYYY-MM-DD');
+    const newDate = moment.utc(selectedDate, 'YYYY-MM-DD').subtract(1, viewType).format('YYYY-MM-DD');
     setSelectedDate(newDate);
   };
 
   const nextRange = () => {
-    const newDate = moment(selectedDate, 'YYYY-MM-DD').add(1, viewType).format('YYYY-MM-DD');
+    const newDate = moment.utc(selectedDate, 'YYYY-MM-DD').add(1, viewType).format('YYYY-MM-DD');
     setSelectedDate(newDate);
   };
 
@@ -58,7 +58,7 @@ export default function SummaryView({ events, onViewEvent, selectedDate, setSele
   };
 
   const formatRangeLabel = () => {
-    const mDate = moment(selectedDate, 'YYYY-MM-DD');
+    const mDate = moment.utc(selectedDate, 'YYYY-MM-DD');
     if (viewType === 'day') return mDate.format('dddd, MMM D, YYYY');
     if (viewType === 'week') {
       const start = moment(mDate).startOf('week');
@@ -117,9 +117,13 @@ export default function SummaryView({ events, onViewEvent, selectedDate, setSele
                   <div className="flex-1 flex flex-col gap-2">
                     <div className="flex items-baseline gap-2">
                       <h3 className="font-bold text-base text-text group-hover:text-accent group-hover:underline transition-colors">
-                        {e.companyName || e.clientName}
+                        {e.show}
                       </h3>
-                      {e.companyName && <span className="text-[10px] text-subtext0 italic">({e.clientName})</span>}
+                      {(e.companyName || e.clientName) && (
+                        <span className="text-[10px] text-subtext0 italic">
+                          ({e.companyName ? `${e.companyName} - ` : ''}{e.clientName})
+                        </span>
+                      )}
                       <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest border
                         ${e.status === 'Confirmed' ? 'bg-green/10 text-green border-green/20' : 
                           e.status === 'Completed' ? 'bg-blue/10 text-blue border-blue/20' : 
@@ -132,7 +136,7 @@ export default function SummaryView({ events, onViewEvent, selectedDate, setSele
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                       <div className="flex items-center gap-1.5 text-subtext1">
                         <CalendarIcon className="w-3.5 h-3.5 text-accent" />
-                        <span className="font-medium text-text">{moment(e.date).format('MMM D')} | {e.startTime} - {e.endTime}</span>
+                        <span className="font-medium text-text">{moment.utc(e.date).format('MMM D')} | {e.startTime} - {e.endTime}</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-subtext1">
                         <MapPin className="w-3.5 h-3.5 text-accent" />

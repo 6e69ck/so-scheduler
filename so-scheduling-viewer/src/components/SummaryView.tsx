@@ -147,9 +147,13 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2 sm:mb-3">
                       <h3 className={`font-bold text-sm sm:text-xl ${isHighlighted ? 'text-[#cba6f7]' : 'text-[#f5e0dc]'}`}>
-                        {e.companyName || e.clientName}
+                        {e.show}
                       </h3>
-                      {e.companyName && <span className="text-[10px] sm:text-xs text-[#6c7086] italic">({e.clientName})</span>}
+                      {(e.companyName || e.clientName) && (
+                        <span className="text-[10px] sm:text-xs text-[#6c7086] italic">
+                          ({e.companyName ? `${e.companyName} - ` : ''}{e.clientName})
+                        </span>
+                      )}
                       <span className={`text-[8px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider
                         ${e.status === 'Confirmed' ? 'bg-[#a6e3a1]/10 text-[#a6e3a1]' : 
                           e.status === 'Completed' ? 'bg-[#89b4fa]/10 text-[#89b4fa]' : 

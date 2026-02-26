@@ -275,13 +275,16 @@ export default function CalendarView({ events, onEditEvent, onCreateEvent, onVie
         @media (max-width: 767px) {
           .rbc-time-view {
             overflow-x: auto !important;
+            overflow-y: hidden !important;
             scroll-snap-type: x mandatory;
-            display: flex;
-            flex-direction: column;
+            -webkit-overflow-scrolling: touch;
           }
           .rbc-time-header, .rbc-time-content {
             min-width: 233.33% !important; /* Forces 3 days to fit viewport width */
-            overflow: visible !important;
+          }
+          .rbc-time-content {
+            overflow-y: auto !important;
+            touch-action: pan-y;
           }
           .rbc-header, .rbc-day-slot {
             scroll-snap-align: start;
