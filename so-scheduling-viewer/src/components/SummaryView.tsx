@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { EventType } from '@/types';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Phone, MapPin, Mail, Users, Package, StickyNote, Plus, X } from 'lucide-react';
 import moment from 'moment';
+import { useTranslations } from 'next-intl';
 
 type ViewType = 'day' | 'week' | 'month';
 
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export default function SummaryView({ events, selectedDate, setSelectedDate, highlightedEventId, onAddStaff, onRemoveStaff }: Props) {
+  const t = useTranslations('Common');
   const [viewType, setViewType] = useState<ViewType>('day');
   const [addingStaffTo, setAddingStaffTo] = useState<string | null>(null);
   const [staffName, setStaffName] = useState('');
@@ -30,7 +32,6 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
   }, [highlightedEventId]);
 
   const filteredEvents = events.filter(e => {
-    // Compare using UTC strings to avoid timezone shifts
     const eventDateStr = moment.utc(e.date).format('YYYY-MM-DD');
     const targetMoment = moment.utc(selectedDate, 'YYYY-MM-DD');
     const eventMoment = moment.utc(eventDateStr, 'YYYY-MM-DD');
@@ -76,7 +77,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
   };
 
   const formatPhone = (phone: string) => {
-    if (!phone) return 'No phone number';
+    if (!phone) return 'N/A';
     const cleaned = ('' + phone).replace(/\D/g, '');
     const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
     if (match) {
@@ -102,7 +103,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
         <div className="flex items-center gap-3">
           <h2 className="font-bold text-sm sm:text-xl text-[#cba6f7] flex items-center gap-2">
             <CalendarIcon className="w-4 h-4 text-[#cba6f7] hidden sm:block" />
-            Summary
+            {t('summary')}
           </h2>
           <div className="flex bg-[#181825] rounded-md p-0.5 border border-[#313244]">
             {(['day', 'week', 'month'] as ViewType[]).map((v) => (
@@ -111,7 +112,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
                 onClick={() => setViewType(v)}
                 className={`px-2 py-1 rounded text-[10px] sm:text-xs font-bold transition-all ${viewType === v ? 'bg-[#313244] text-[#cba6f7] shadow-sm' : 'text-[#a6adc8] hover:text-[#cdd6f4]'}`}
               >
-                {v.charAt(0).toUpperCase() + v.slice(1)}
+                {v === 'day' ? t('day') : v === 'week' ? t('week') : t('month')}
               </button>
             ))}
           </div>
@@ -160,19 +161,19 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 sm:gap-y-3 gap-x-8 text-[11px] sm:text-sm">
                       <div className="flex items-baseline gap-2 text-[#a6adc8]">
                         <CalendarIcon className="hidden sm:block w-4 h-4 text-[#cba6f7] shrink-0" />
-                        <span className="text-[9px] uppercase font-bold text-[#6c7086] w-10 sm:hidden">Time:</span>
+                        <span className="text-[9px] uppercase font-bold text-[#6c7086] w-10 sm:hidden">{t('time')}:</span>
                         <p className="font-medium text-[#cdd6f4]">{moment.utc(e.date).format('MMM D')} | {e.startTime} - {e.endTime}</p>
                       </div>
                       
                       <div className="flex items-baseline gap-2 text-[#a6adc8]">
                         <MapPin className="hidden sm:block w-4 h-4 text-[#cba6f7] shrink-0" />
-                        <span className="text-[9px] uppercase font-bold text-[#6c7086] w-10 sm:hidden">Loc:</span>
+                        <span className="text-[9px] uppercase font-bold text-[#6c7086] w-10 sm:hidden">{t('loc')}:</span>
                         <p className="font-medium text-[#cdd6f4] truncate" title={e.location}>{e.location || 'N/A'}</p>
                       </div>
 
                       <div className="flex items-baseline gap-2 text-[#a6adc8]">
                         <Phone className="hidden sm:block w-4 h-4 text-[#cba6f7] shrink-0" />
-                        <span className="text-[9px] uppercase font-bold text-[#6c7086] w-10 sm:hidden">Phone:</span>
+                        <span className="text-[9px] uppercase font-bold text-[#6c7086] w-10 sm:hidden">{t('phone')}:</span>
                         {e.clientPhone ? (
                           <a href={`tel:${e.clientPhone}`} className="font-medium text-[#cdd6f4] hover:text-[#cba6f7] underline decoration-accent/20 transition-colors">{formatPhone(e.clientPhone)}</a>
                         ) : (
@@ -182,7 +183,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
 
                       <div className="flex items-baseline gap-2 text-[#a6adc8]">
                         <Mail className="hidden sm:block w-4 h-4 text-[#cba6f7] shrink-0" />
-                        <span className="text-[9px] uppercase font-bold text-[#6c7086] w-10 sm:hidden">Email:</span>
+                        <span className="text-[9px] uppercase font-bold text-[#6c7086] w-10 sm:hidden">{t('email')}:</span>
                         {e.clientEmail ? (
                           <a href={`mailto:${e.clientEmail}`} className="font-medium text-[#cdd6f4] hover:text-[#cba6f7] transition-colors truncate block max-w-[180px] underline decoration-accent/20" title={e.clientEmail}>{e.clientEmail}</a>
                         ) : (
@@ -198,7 +199,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
                         <Users className={`w-4 h-4 sm:w-6 h-6 ${staffColorClass}`} />
                         <span className={`text-lg sm:text-2xl font-black ${staffColorClass}`}>{assignedCount}/{neededCount}</span>
                       </div>
-                      <span className="text-[8px] sm:text-[10px] uppercase tracking-widest text-[#6c7086] font-black mb-2">Staff Assigned</span>
+                      <span className="text-[8px] sm:text-[10px] uppercase tracking-widest text-[#6c7086] font-black mb-2">{t('staffAssigned')}</span>
                       
                       <div className="flex flex-wrap justify-center gap-1 w-full mb-3">
                         {e.staff && e.staff.length > 0 ? (
@@ -211,17 +212,17 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
                             </div>
                           ))
                         ) : (
-                          <span className="text-[9px] text-[#45475a] italic">None</span>
+                          <span className="text-[9px] text-[#45475a] italic">{t('noneAssigned')}</span>
                         )}
                       </div>
 
                       {addingStaffTo === e._id ? (
                         <div className="w-full flex gap-1">
-                          <input autoFocus type="text" placeholder="Name" value={staffName} onChange={(e) => setStaffName(e.target.value)} onKeyDown={(ev) => ev.key === 'Enter' && handleStaffSubmit(e._id!)} className="bg-[#11111b] border border-[#cba6f7] rounded px-1.5 py-1 text-[10px] w-full outline-none" />
+                          <input autoFocus type="text" placeholder={t('yourName')} value={staffName} onChange={(e) => setStaffName(e.target.value)} onKeyDown={(ev) => ev.key === 'Enter' && handleStaffSubmit(e._id!)} className="bg-[#11111b] border border-[#cba6f7] rounded px-1.5 py-1 text-[10px] w-full outline-none" />
                           <button onClick={() => handleStaffSubmit(e._id!)} className="bg-[#cba6f7] text-[#11111b] px-2 rounded"><Plus className="w-3 h-3" /></button>
                         </div>
                       ) : (
-                        <button onClick={() => setAddingStaffTo(e._id!)} className="w-full py-1 sm:py-2 bg-[#313244] rounded text-[10px] sm:text-xs font-bold text-[#cba6f7] border border-[#45475a]">Join Show</button>
+                        <button onClick={() => setAddingStaffTo(e._id!)} className="w-full py-1 sm:py-2 bg-[#313244] rounded text-[10px] sm:text-xs font-bold text-[#cba6f7] border border-[#45475a]">{t('joinShow')}</button>
                       )}
                     </div>
                   </div>
@@ -232,7 +233,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Package className="hidden sm:block w-4 h-4 text-[#cba6f7]" />
-                      <span className="text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-[#cba6f7]">Equipment</span>
+                      <span className="text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-[#cba6f7]">{t('equipment')}</span>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {e.gear && e.gear.length > 0 ? (
@@ -240,7 +241,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
                           <span key={idx} className="px-2 py-0.5 bg-[#181825] border border-[#313244] text-[10px] sm:text-xs text-[#a6adc8] rounded-md">{g}</span>
                         ))
                       ) : (
-                        <span className="text-[10px] text-[#45475a] italic">None listed</span>
+                        <span className="text-[10px] text-[#45475a] italic">{t('none')}</span>
                       )}
                     </div>
                   </div>
@@ -248,13 +249,13 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <StickyNote className="hidden sm:block w-4 h-4 text-[#cba6f7]" />
-                      <span className="text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-[#cba6f7]">Notes</span>
+                      <span className="text-[8px] sm:text-[10px] uppercase font-black tracking-widest text-[#cba6f7]">{t('notes')}</span>
                     </div>
                     <div className="bg-[#181825]/50 border border-[#313244] rounded p-2 min-h-[40px]">
                       {e.notes ? (
                         <p className="text-[10px] sm:text-xs text-[#a6adc8] leading-tight">{e.notes}</p>
                       ) : (
-                        <p className="text-[10px] text-[#45475a] italic">None</p>
+                        <p className="text-[10px] text-[#45475a] italic">{t('none')}</p>
                       )}
                     </div>
                   </div>
@@ -264,7 +265,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
           })}
           {filteredEvents.length === 0 && (
             <div className="py-20 text-center bg-[#181825] rounded-lg border-2 border-dashed border-[#313244]">
-              <p className="text-[#6c7086] font-bold">No shows scheduled.</p>
+              <p className="text-[#6c7086] font-bold">{t('noShows')}</p>
             </div>
           )}
         </div>

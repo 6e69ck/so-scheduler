@@ -1,0 +1,28 @@
+{
+  "Common": {
+    "summary": "Summary",
+    "calendar": "Calendar",
+    "all": "All",
+    "confirmed": "Confirmed",
+    "teamAccess": "Team Access Only",
+    "liveData": "Live Data",
+    "day": "Day",
+    "week": "Week",
+    "month": "Month",
+    "staffAssigned": "Staff Assigned",
+    "noneAssigned": "None assigned",
+    "joinShow": "Join Show",
+    "equipment": "Equipment Needed",
+    "notes": "Show Notes",
+    "none": "None",
+    "noShows": "No shows scheduled for this period.",
+    "selectDifferent": "Select a different date or view mode.",
+    "yourName": "Your Name",
+    "loc": "Loc",
+    "time": "Time",
+    "phone": "Phone",
+    "email": "Email",
+    "loading": "Loading Schedule...",
+    "confirmRemove": "Are you sure you want to remove {name} from this show?"
+  }
+}

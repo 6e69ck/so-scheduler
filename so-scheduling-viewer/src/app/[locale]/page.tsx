@@ -3,11 +3,14 @@
 import { useState, useEffect } from 'react';
 import CalendarView from '@/components/CalendarView';
 import SummaryView from '@/components/SummaryView';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { EventType } from '@/types';
 import { Calendar, FileText, Loader2, Eye, EyeOff } from 'lucide-react';
 import moment from 'moment';
+import { useTranslations } from 'next-intl';
 
 export default function Home() {
+  const t = useTranslations('Common');
   const [view, setView] = useState<'calendar' | 'summary'>('summary');
   const [events, setEvents] = useState<EventType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +39,6 @@ export default function Home() {
   }, []);
 
   const handleEventClick = (event: EventType) => {
-    // Jump to the day of the event using UTC to ensure absolute consistency
     const dateStr = moment.utc(event.date).format('YYYY-MM-DD');
     setSelectedDate(dateStr);
     setHighlightedEventId(event._id || null);
@@ -62,7 +64,7 @@ export default function Home() {
   };
 
   const handleRemoveStaff = async (eventId: string, name: string) => {
-    if (!confirm(`Are you sure you want to remove ${name} from this show?`)) return;
+    if (!confirm(t('confirmRemove', { name }))) return;
     
     try {
       const res = await fetch(`/api/events/${eventId}/staff/remove`, {
@@ -95,7 +97,7 @@ export default function Home() {
       <div className="h-screen bg-[#11111b] flex items-center justify-center text-[#cdd6f4]">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-12 h-12 text-[#cba6f7] animate-spin" />
-          <p className="font-bold text-lg animate-pulse">Loading Schedule...</p>
+          <p className="font-bold text-lg animate-pulse">{t('loading')}</p>
         </div>
       </div>
     );
@@ -115,28 +117,31 @@ export default function Home() {
         </div>
 
         <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end gap-4">
-          <button 
-            onClick={() => setShowPending(!showPending)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all border ${showPending ? 'bg-[#cba6f7]/10 border-[#cba6f7] text-[#cba6f7]' : 'bg-[#1e1e2e] border-[#313244] text-[#6c7086]'}`}
-          >
-            {showPending ? <Eye className="w-3 h-3 sm:w-4 h-4" /> : <EyeOff className="w-3 h-3 sm:w-4 h-4" />}
-            <span>{showPending ? 'All' : 'Confirmed'}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <button 
+              onClick={() => setShowPending(!showPending)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all border ${showPending ? 'bg-[#cba6f7]/10 border-[#cba6f7] text-[#cba6f7]' : 'bg-[#1e1e2e] border-[#313244] text-[#6c7086]'}`}
+            >
+              {showPending ? <Eye className="w-3 h-3 sm:w-4 h-4" /> : <EyeOff className="w-3 h-3 sm:w-4 h-4" />}
+              <span>{showPending ? t('all') : t('confirmed')}</span>
+            </button>
+          </div>
 
           <div className="flex bg-[#11111b] rounded-xl p-1 border border-[#313244] shadow-inner">
             <button
               onClick={() => setView('summary')}
               className={`flex items-center justify-center px-4 sm:px-6 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all duration-300 ${view === 'summary' ? 'bg-[#cba6f7] text-[#11111b] shadow-lg' : 'text-[#a6adc8] hover:text-[#cdd6f4]'}`}
             >
-              <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              Summary
+              <FileText className="w-3 h-3 sm:w-4 h-4 mr-1 sm:mr-2" />
+              {t('summary')}
             </button>
             <button
               onClick={() => setView('calendar')}
               className={`flex items-center justify-center px-4 sm:px-6 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all duration-300 ${view === 'calendar' ? 'bg-[#cba6f7] text-[#11111b] shadow-lg' : 'text-[#a6adc8] hover:text-[#cdd6f4]'}`}
             >
-              <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              Calendar
+              <Calendar className="w-3 h-3 sm:w-4 h-4 mr-1 sm:mr-2" />
+              {t('calendar')}
             </button>
           </div>
         </div>
@@ -165,10 +170,10 @@ export default function Home() {
       
       {/* Footer */}
       <div className="bg-[#11111b] px-6 py-2 border-t border-[#313244] flex justify-between items-center text-[8px] sm:text-[10px] uppercase tracking-widest text-[#6c7086] font-bold shrink-0">
-        <div>Team Access</div>
+        <div>{t('teamAccess')}</div>
         <div className="flex items-center gap-2">
           <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-          Live
+          {t('liveData')}
         </div>
         <div>v1.2.1</div>
       </div>

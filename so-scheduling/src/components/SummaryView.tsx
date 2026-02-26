@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { EventType } from '@/types';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Phone, MapPin, Mail, Users, Package, StickyNote } from 'lucide-react';
 import moment from 'moment';
+import { useTranslations } from 'next-intl';
 
 type ViewType = 'day' | 'week' | 'month';
 
@@ -15,35 +16,36 @@ interface Props {
 }
 
 export default function SummaryView({ events, onViewEvent, selectedDate, setSelectedDate }: Props) {
+  const t = useTranslations('Common');
   const [viewType, setViewType] = useState<ViewType>('day');
 
   const filteredEvents = events.filter(e => {
-    // Compare using UTC to match how dates are saved and ensure consistency with the jump logic
-    const eventDateStr = moment.utc(e.date).format('YYYY-MM-DD');
-    const targetMoment = moment.utc(selectedDate, 'YYYY-MM-DD');
-    const eventMoment = moment.utc(eventDateStr, 'YYYY-MM-DD');
+    // Use local time for comparison to match the calendar view and user expectation
+    const eventDateStr = moment(e.date).format('YYYY-MM-DD');
+    const targetDate = moment(selectedDate, 'YYYY-MM-DD');
+    const eventDate = moment(eventDateStr, 'YYYY-MM-DD');
     
     if (viewType === 'day') {
       return eventDateStr === selectedDate;
     } else if (viewType === 'week') {
-      return eventMoment.isSame(targetMoment, 'week');
+      return eventDate.isSame(targetDate, 'week');
     } else {
-      return eventMoment.isSame(targetMoment, 'month');
+      return eventDate.isSame(targetDate, 'month');
     }
   }).sort((a, b) => {
-    const dateA = moment.utc(a.date).format('YYYY-MM-DD');
-    const dateB = moment.utc(b.date).format('YYYY-MM-DD');
+    const dateA = moment(a.date).format('YYYY-MM-DD');
+    const dateB = moment(b.date).format('YYYY-MM-DD');
     if (dateA !== dateB) return dateA.localeCompare(dateB);
     return a.startTime.localeCompare(b.startTime);
   });
 
   const prevRange = () => {
-    const newDate = moment.utc(selectedDate, 'YYYY-MM-DD').subtract(1, viewType).format('YYYY-MM-DD');
+    const newDate = moment(selectedDate, 'YYYY-MM-DD').subtract(1, viewType).format('YYYY-MM-DD');
     setSelectedDate(newDate);
   };
 
   const nextRange = () => {
-    const newDate = moment.utc(selectedDate, 'YYYY-MM-DD').add(1, viewType).format('YYYY-MM-DD');
+    const newDate = moment(selectedDate, 'YYYY-MM-DD').add(1, viewType).format('YYYY-MM-DD');
     setSelectedDate(newDate);
   };
 
@@ -56,7 +58,7 @@ export default function SummaryView({ events, onViewEvent, selectedDate, setSele
   };
 
   const formatRangeLabel = () => {
-    const mDate = moment.utc(selectedDate, 'YYYY-MM-DD');
+    const mDate = moment(selectedDate, 'YYYY-MM-DD');
     if (viewType === 'day') return mDate.format('dddd, MMM D, YYYY');
     if (viewType === 'week') {
       const start = moment(mDate).startOf('week');
@@ -72,7 +74,7 @@ export default function SummaryView({ events, onViewEvent, selectedDate, setSele
         <div className="flex items-center gap-3">
           <h2 className="font-bold text-lg text-text flex items-center gap-2">
             <CalendarIcon className="w-5 h-5 text-accent" />
-            Admin Summary
+            {t('adminSummary')}
           </h2>
           <div className="flex bg-crust rounded-md p-0.5 border border-surface0">
             {(['day', 'week', 'month'] as ViewType[]).map((v) => (
@@ -81,7 +83,7 @@ export default function SummaryView({ events, onViewEvent, selectedDate, setSele
                 onClick={() => setViewType(v)}
                 className={`px-3 py-1 rounded text-xs font-bold transition-all ${viewType === v ? 'bg-surface0 text-accent shadow-sm' : 'text-subtext0 hover:text-text'}`}
               >
-                {v.charAt(0).toUpperCase() + v.slice(1)}
+                {v === 'day' ? t('day') : v === 'week' ? t('week') : t('month')}
               </button>
             ))}
           </div>
@@ -102,6 +104,7 @@ export default function SummaryView({ events, onViewEvent, selectedDate, setSele
             const assignedCount = e.staff?.length || 0;
             const neededCount = e.neededPeople || 0;
             const remaining = (e.totalPrice || 0) - (e.paidBalance || 0);
+            
             const statusColor = neededCount > 0 && assignedCount < neededCount ? '#f38ba8' : '#a6e3a1';
             
             return (
@@ -129,7 +132,7 @@ export default function SummaryView({ events, onViewEvent, selectedDate, setSele
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                       <div className="flex items-center gap-1.5 text-subtext1">
                         <CalendarIcon className="w-3.5 h-3.5 text-accent" />
-                        <span className="font-medium text-text">{moment.utc(e.date).format('MMM D')} | {e.startTime} - {e.endTime}</span>
+                        <span className="font-medium text-text">{moment(e.date).format('MMM D')} | {e.startTime} - {e.endTime}</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-subtext1">
                         <MapPin className="w-3.5 h-3.5 text-accent" />
@@ -148,19 +151,19 @@ export default function SummaryView({ events, onViewEvent, selectedDate, setSele
 
                   <div className="flex-1 bg-surface0/50 border border-surface1/30 rounded-md p-2 grid grid-cols-2 lg:grid-cols-4 gap-2 items-center">
                     <div className="flex flex-col">
-                      <span className="text-[9px] uppercase text-subtext0 font-bold">Total</span>
+                      <span className="text-[9px] uppercase text-subtext0 font-bold">{t('totalPrice')}</span>
                       <span className="text-xs font-bold text-text">${e.totalPrice?.toFixed(2) || '0.00'}</span>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-[9px] uppercase text-subtext0 font-bold">Paid</span>
+                      <span className="text-[9px] uppercase text-subtext0 font-bold">{t('paidBalance')}</span>
                       <span className="text-xs font-bold text-[#a6e3a1]">${e.paidBalance?.toFixed(2) || '0.00'}</span>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-[9px] uppercase text-subtext0 font-bold">Remain</span>
+                      <span className="text-[9px] uppercase text-subtext0 font-bold">{t('remainingBalance')}</span>
                       <span className="text-xs font-bold text-accent">${remaining.toFixed(2)}</span>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-[9px] uppercase text-subtext0 font-bold">Tips</span>
+                      <span className="text-[9px] uppercase text-subtext0 font-bold">{t('tips')}</span>
                       <span className="text-xs italic text-subtext1">${e.tips?.toFixed(2) || '0.00'}</span>
                     </div>
                   </div>
@@ -177,7 +180,7 @@ export default function SummaryView({ events, onViewEvent, selectedDate, setSele
                         {e.staff?.map((s, idx) => (
                           <span key={idx} className="text-[10px] bg-surface2/60 px-2 py-1 rounded-md text-text border border-surface1 shadow-sm font-bold whitespace-nowrap">{s}</span>
                         ))}
-                        {assignedCount === 0 && <span className="text-[10px] text-surface2 italic">No staff assigned</span>}
+                        {assignedCount === 0 && <span className="text-[10px] text-surface2 italic">{t('noEvents')}</span>}
                       </div>
                     </div>
                   </div>
@@ -203,7 +206,7 @@ export default function SummaryView({ events, onViewEvent, selectedDate, setSele
           {filteredEvents.length === 0 && (
             <div className="py-12 text-center bg-mantle rounded-lg border border-dashed border-surface0">
               <CalendarIcon className="w-10 h-10 text-surface1 mx-auto mb-2" />
-              <p className="text-subtext0 text-sm font-medium">No events for this period.</p>
+              <p className="text-subtext0 text-sm font-medium">{t('noEvents')}</p>
             </div>
           )}
         </div>

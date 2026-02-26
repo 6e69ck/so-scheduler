@@ -5,11 +5,14 @@ import SpreadsheetView from '@/components/SpreadsheetView';
 import SummaryView from '@/components/SummaryView';
 import EventModal from '@/components/EventModal';
 import ViewEventModal from '@/components/ViewEventModal';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { EventType } from '@/types';
 import { Calendar, LayoutGrid, FileText, Loader2, Plus } from 'lucide-react';
 import moment from 'moment';
+import { useTranslations } from 'next-intl';
 
 export default function Home() {
+  const t = useTranslations('Common');
   const [view, setView] = useState<'calendar' | 'spreadsheet' | 'summary'>('calendar');
   const [events, setEvents] = useState<EventType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,8 +79,7 @@ export default function Home() {
   };
 
   const handleViewEvent = (event: EventType) => {
-    // Jump to the day of the event using UTC to ensure it matches the stored date
-    const dateStr = moment.utc(event.date).format('YYYY-MM-DD');
+    const dateStr = moment(event.date).format('YYYY-MM-DD');
     setSelectedDate(dateStr);
     setViewingEvent(event);
     setView('summary');
@@ -105,36 +107,40 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex bg-crust rounded-xl p-1 border border-surface0 shadow-inner">
-          <button
-            onClick={() => setView('calendar')}
-            className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'calendar' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
+        <div className="flex items-center gap-4">
+          <LanguageSwitcher />
+          
+          <div className="flex bg-crust rounded-xl p-1 border border-surface0 shadow-inner">
+            <button
+              onClick={() => setView('calendar')}
+              className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'calendar' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              {t('calendar')}
+            </button>
+            <button
+              onClick={() => setView('summary')}
+              className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'summary' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              {t('summary')}
+            </button>
+            <button
+              onClick={() => setView('spreadsheet')}
+              className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'spreadsheet' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
+            >
+              <LayoutGrid className="w-4 h-4 mr-2" />
+              {t('list')}
+            </button>
+          </div>
+
+          <button 
+            onClick={() => { setInitialRange(undefined); setEditingEvent(null); setIsModalOpen(true); }}
+            className="bg-accent hover:bg-accent-hover text-crust px-5 py-2.5 rounded-xl font-bold transition flex items-center shadow-lg shadow-accent/10 active:scale-95"
           >
-            <Calendar className="w-4 h-4 mr-2" />
-            Calendar
-          </button>
-          <button
-            onClick={() => setView('summary')}
-            className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'summary' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            Summary
-          </button>
-          <button
-            onClick={() => setView('spreadsheet')}
-            className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'spreadsheet' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
-          >
-            <LayoutGrid className="w-4 h-4 mr-2" />
-            List
+            <Plus className="w-4 h-4 mr-2" /> {t('newShow')}
           </button>
         </div>
-
-        <button 
-          onClick={() => { setInitialRange(undefined); setEditingEvent(null); setIsModalOpen(true); }}
-          className="bg-accent hover:bg-accent-hover text-crust px-5 py-2.5 rounded-xl font-bold transition flex items-center shadow-lg shadow-accent/10 active:scale-95"
-        >
-          <Plus className="w-4 h-4 mr-2" /> New Show
-        </button>
       </div>
 
       {/* Main Content */}

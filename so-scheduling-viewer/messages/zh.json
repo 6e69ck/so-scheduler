@@ -1,0 +1,28 @@
+{
+  "Common": {
+    "summary": "摘要",
+    "calendar": "日历",
+    "all": "全部",
+    "confirmed": "已确认",
+    "teamAccess": "仅限团队访问",
+    "liveData": "实时数据",
+    "day": "日",
+    "week": "周",
+    "month": "月",
+    "staffAssigned": "人员安排",
+    "noneAssigned": "暂无人员",
+    "joinShow": "加入演出",
+    "equipment": "所需设备",
+    "notes": "演出备注",
+    "none": "无",
+    "noShows": "该时段没有演出。",
+    "selectDifferent": "请选择其他日期或查看模式。",
+    "yourName": "您的姓名",
+    "loc": "地点",
+    "time": "时间",
+    "phone": "电话",
+    "email": "邮箱",
+    "loading": "正在加载日程...",
+    "confirmRemove": "您确定要将 {name} 从此演出中移除吗？"
+  }
+}
