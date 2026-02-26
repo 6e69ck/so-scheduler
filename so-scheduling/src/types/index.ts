@@ -21,3 +21,12 @@ export interface EventType {
   eventNumber?: number;
   tips?: number;
 }
+
+export interface InvoiceType {
+  _id?: string;
+  hash: string;
+  eventId: string;
+  type: 'deposit' | 'remaining';
+  snapshot: EventType;
+  createdAt: string;
+}

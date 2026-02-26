@@ -1,28 +1,26 @@
 import React from 'react';
 import dbConnect from '@/lib/mongodb';
-import Event from '@/models/Event';
+import Invoice from '@/models/Invoice';
 import { notFound } from 'next/navigation';
-import PrintButton from './PrintButton';
+import PrintButton from '../../invoice/[id]/PrintButton';
 import fs from 'fs';
 import path from 'path';
 import ReactMarkdown from 'react-markdown';
 
-export default async function InvoicePage(props: { params: Promise<{ id: string }>, searchParams: Promise<{ type?: string }> }) {
+export default async function ImmutableInvoicePage(props: { params: Promise<{ hash: string }> }) {
   const params = await props.params;
-  const searchParams = await props.searchParams;
   
   await dbConnect();
   
-  let event;
-  try {
-    event = await Event.findById(params.id);
-  } catch (err) {
+  const invoice = await Invoice.findOne({ hash: params.hash });
+  if (!invoice) {
     notFound();
   }
 
-  if (!event) {
-    notFound();
-  }
+  const event = invoice.snapshot;
+  const isDeposit = invoice.type === 'deposit';
+  const invoiceType = isDeposit ? 'Deposit' : 'Remaining Balance';
+  const idSuffix = isDeposit ? 'a' : 'b';
 
   const formatPhone = (phone: string) => {
     if (!phone) return '';
@@ -33,10 +31,6 @@ export default async function InvoicePage(props: { params: Promise<{ id: string 
     }
     return phone;
   };
-
-  const isDeposit = searchParams.type === 'deposit';
-  const invoiceType = isDeposit ? 'Deposit' : 'Remaining Balance';
-  const idSuffix = isDeposit ? 'a' : 'b';
   
   const totalPrice = event.totalPrice || 0;
   const paidBalance = event.paidBalance || 0;
@@ -83,7 +77,7 @@ export default async function InvoicePage(props: { params: Promise<{ id: string 
             </div>
             <div className="text-right">
               <h2 className="text-2xl font-bold text-gray-900 leading-tight">The Soaring Eagles</h2>
-              <p className="text-gray-500 mt-1 text-sm font-medium">Invoice Date: {new Date().toLocaleDateString('en-US')}</p>
+              <p className="text-gray-500 mt-1 text-sm font-medium">Invoice Date: {new Date(invoice.createdAt).toLocaleDateString('en-US')}</p>
               <div className="mt-4 text-right">
                 <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-gray-400 block mb-1">Invoice ID</span>
                 <span className="text-3xl font-bold text-gray-900 tracking-tighter">#{String(event.eventNumber ?? 1).padStart(4, '0')}{idSuffix}</span>

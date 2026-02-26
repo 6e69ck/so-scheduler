@@ -1,5 +1,8 @@
-import React from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import { EventType } from '@/types';
+import { Loader2, RefreshCcw } from 'lucide-react';
 
 interface Props {
   event: EventType;
@@ -8,6 +11,54 @@ interface Props {
 }
 
 export default function ViewEventModal({ event, onClose, onEdit }: Props) {
+  const [depositHash, setDepositHash] = useState<string | null>(null);
+  const [remainingHash, setRemainingHash] = useState<string | null>(null);
+  const [loadingType, setLoadingType] = useState<'deposit' | 'remaining' | null>(null);
+
+  useEffect(() => {
+    const fetchHashes = async () => {
+      try {
+        const [dRes, rRes] = await Promise.all([
+          fetch(`/api/invoices?eventId=${event._id}&type=deposit`),
+          fetch(`/api/invoices?eventId=${event._id}&type=remaining`)
+        ]);
+        const dData = await dRes.json();
+        const rData = await rRes.json();
+        setDepositHash(dData.hash);
+        setRemainingHash(rData.hash);
+      } catch (err) {
+        console.error('Failed to fetch invoice hashes', err);
+      }
+    };
+    if (event._id) fetchHashes();
+  }, [event._id]);
+
+  const generateInvoice = async (type: 'deposit' | 'remaining', isRegen = false) => {
+    if (isRegen) {
+      const confirmRegen = confirm(`Are you sure you want to regenerate this ${type} invoice? The old link will still work, but a new snapshot will be created.`);
+      if (!confirmRegen) return;
+    }
+
+    setLoadingType(type);
+    try {
+      const res = await fetch('/api/invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId: event._id, type })
+      });
+      const data = await res.json();
+      if (data.hash) {
+        if (type === 'deposit') setDepositHash(data.hash);
+        else setRemainingHash(data.hash);
+        window.open(`/inv/${data.hash}`, '_blank');
+      }
+    } catch (err) {
+      console.error('Failed to generate invoice', err);
+    } finally {
+      setLoadingType(null);
+    }
+  };
+
   const formatPhone = (phone: string) => {
     if (!phone) return '';
     const cleaned = ('' + phone).replace(/\D/g, '');
@@ -19,7 +70,7 @@ export default function ViewEventModal({ event, onClose, onEdit }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 bg-base/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4 font-sans" onClick={(e) => { e.stopPropagation(); setTimeout(onClose, 0); }}>
+    <div className="fixed inset-0 bg-base/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4 font-sans" onClick={() => onClose()}>
       <div 
         className="bg-mantle border border-surface0 p-6 rounded-xl shadow-2xl w-full max-w-md text-text opacity-100"
         onClick={(e) => e.stopPropagation()}
@@ -94,37 +145,84 @@ export default function ViewEventModal({ event, onClose, onEdit }: Props) {
           )}
         </div>
         
-        <div className="flex flex-col sm:flex-row justify-between items-center pt-5 mt-2 border-t border-surface0 gap-3">
-          <div className="flex space-x-2 w-full sm:w-auto">
-            <a 
-              href={`/invoice/${event._id}?type=deposit`} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="flex-1 sm:flex-none px-3 py-2 bg-surface0 text-subtext1 rounded-md text-xs font-bold hover:bg-surface1 hover:text-text transition text-center border border-surface1"
-            >
-              Deposit Inv.
-            </a>
-            <a 
-              href={`/invoice/${event._id}?type=remaining`} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="flex-1 sm:flex-none px-3 py-2 bg-surface0 text-subtext1 rounded-md text-xs font-bold hover:bg-surface1 hover:text-text transition text-center border border-surface1"
-            >
-              Remaining Inv.
-            </a>
+        <div className="grid grid-cols-2 gap-3 pt-5 mt-2 border-t border-surface0">
+          {/* Deposit Invoice Button/Link */}
+          <div className="flex bg-surface0 rounded-md border border-surface1 overflow-hidden group h-10">
+            {depositHash ? (
+              <>
+                <a 
+                  href={`/inv/${depositHash}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="px-3 py-2 text-accent text-xs font-bold hover:bg-surface1 transition text-center flex-1 flex items-center justify-center"
+                >
+                  Deposit Inv.
+                </a>
+                <button 
+                  onClick={() => generateInvoice('deposit', true)}
+                  disabled={loadingType !== null}
+                  className="px-2.5 py-2 border-l border-surface1 hover:bg-surface1 transition text-subtext0 hover:text-accent flex items-center justify-center"
+                  title="Regenerate Invoice"
+                >
+                  {loadingType === 'deposit' ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCcw className="w-3 h-3" />}
+                </button>
+              </>
+            ) : (
+              <button 
+                onClick={() => generateInvoice('deposit')}
+                disabled={loadingType !== null}
+                className="px-3 py-2 text-subtext1 text-xs font-bold hover:bg-surface1 hover:text-text transition text-center flex-1"
+              >
+                {loadingType === 'deposit' ? <Loader2 className="w-3 h-3 mx-auto animate-spin" /> : 'Gen. Deposit'}
+              </button>
+            )}
           </div>
-          <div className="flex space-x-3 w-full sm:w-auto">
-            <button onClick={(e) => { e.preventDefault(); setTimeout(onClose, 0); }} className="flex-1 sm:flex-none px-4 py-2 bg-surface0 rounded-md text-sm font-bold hover:bg-surface1 transition hover:text-accent">Close</button>
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                setTimeout(() => onEdit(event), 0);
-              }}
-              className="flex-1 sm:flex-none px-4 py-2 bg-accent text-crust rounded-md text-sm font-bold hover:bg-accent-hover transition shadow-md shadow-accent/10"
-            >
-              Edit Details
-            </button>
+
+          {/* Remaining Invoice Button/Link */}
+          <div className="flex bg-surface0 rounded-md border border-surface1 overflow-hidden group h-10">
+            {remainingHash ? (
+              <>
+                <a 
+                  href={`/inv/${remainingHash}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="px-3 py-2 text-accent text-xs font-bold hover:bg-surface1 transition text-center flex-1 flex items-center justify-center"
+                >
+                  Rem. Inv.
+                </a>
+                <button 
+                  onClick={() => generateInvoice('remaining', true)}
+                  disabled={loadingType !== null}
+                  className="px-2.5 py-2 border-l border-surface1 hover:bg-surface1 transition text-subtext0 hover:text-accent flex items-center justify-center"
+                  title="Regenerate Invoice"
+                >
+                  {loadingType === 'remaining' ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCcw className="w-3 h-3" />}
+                </button>
+              </>
+            ) : (
+              <button 
+                onClick={() => generateInvoice('remaining')}
+                disabled={loadingType !== null}
+                className="px-3 py-2 text-subtext1 text-xs font-bold hover:bg-surface1 hover:text-text transition text-center flex-1"
+              >
+                {loadingType === 'remaining' ? <Loader2 className="w-3 h-3 mx-auto animate-spin" /> : 'Gen. Remaining'}
+              </button>
+            )}
           </div>
+
+          <button 
+            onClick={() => onClose()} 
+            className="h-10 px-4 py-2 bg-surface0 rounded-md text-sm font-bold hover:bg-surface1 border border-surface1 transition hover:text-accent flex items-center justify-center"
+          >
+            Close
+          </button>
+          
+          <button
+            onClick={() => onEdit(event)}
+            className="h-10 px-4 py-2 bg-accent text-crust rounded-md text-sm font-bold hover:bg-accent-hover transition shadow-md shadow-accent/10 flex items-center justify-center"
+          >
+            Edit Details
+          </button>
         </div>
       </div>
     </div>

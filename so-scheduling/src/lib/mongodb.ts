@@ -6,6 +6,11 @@ if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env');
 }
 
+/**
+ * Global is used here to maintain a cached connection across hot reloads
+ * in development. This prevents connections growing exponentially
+ * during API Route usage.
+ */
 let cached = (global as any).mongoose;
 
 if (!cached) {
@@ -21,6 +26,10 @@ async function dbConnect() {
     const opts = {
       bufferCommands: false,
       dbName: process.env.NODE_ENV === 'production' ? 'prod' : 'dev',
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      family: 4 // Use IPv4, skip trying IPv6
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
