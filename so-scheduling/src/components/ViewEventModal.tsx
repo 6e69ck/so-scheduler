@@ -12,9 +12,10 @@ interface Props {
   transactions: TransactionType[];
   onClose: () => void;
   onEdit: (e: EventType) => void;
+  onRefresh: () => void;
 }
 
-export default function ViewEventModal({ event, transactions, onClose, onEdit }: Props) {
+export default function ViewEventModal({ event, transactions, onClose, onEdit, onRefresh }: Props) {
   const t = useTranslations('Common');
   const [showCustomModal, setShowCustomModal] = useState(false);
 
@@ -46,6 +47,7 @@ export default function ViewEventModal({ event, transactions, onClose, onEdit }:
         const data = await res.json();
         openInvoice(data.hash);
         if (type === 'custom') setShowCustomModal(false);
+        onRefresh();
       }
     } catch (err) {
       console.error('Failed to generate invoice', err);
