@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Transaction from '@/models/Transaction';
+import { isAuthenticated, unauthorizedResponse } from '@/lib/auth';
 
 export async function GET(req: Request) {
   try {
@@ -13,6 +14,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  if (!isAuthenticated(req)) return unauthorizedResponse();
+
   try {
     await dbConnect();
     const body = await req.json();

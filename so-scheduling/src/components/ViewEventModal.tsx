@@ -33,9 +33,13 @@ export default function ViewEventModal({ event, transactions, onClose, onEdit, o
 
   const generateInvoice = async (type: 'deposit' | 'remaining' | 'custom', customLineItems?: InvoiceLineItem[]) => {
     try {
+      const auth = localStorage.getItem('soaring_admin_session') || '';
       const res = await fetch('/api/invoices', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': auth
+        },
         body: JSON.stringify({ 
           eventId: event._id, 
           type,

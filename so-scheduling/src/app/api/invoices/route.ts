@@ -3,12 +3,15 @@ import dbConnect from '@/lib/mongodb';
 import Invoice from '@/models/Invoice';
 import Event from '@/models/Event';
 import crypto from 'crypto';
+import { isAuthenticated, unauthorizedResponse } from '@/lib/auth';
 
 function generateShortHash() {
   return crypto.randomBytes(3).toString('hex').slice(0, 5).toUpperCase();
 }
 
 export async function POST(req: Request) {
+  if (!isAuthenticated(req)) return unauthorizedResponse();
+
   try {
     await dbConnect();
     const body = await req.json();

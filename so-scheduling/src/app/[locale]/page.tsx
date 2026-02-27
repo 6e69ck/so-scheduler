@@ -27,9 +27,10 @@ export default function Home() {
 
   const fetchData = async () => {
     try {
+      const auth = localStorage.getItem('soaring_admin_session') || '';
       const [eRes, tRes] = await Promise.all([
-        fetch('/api/events'),
-        fetch('/api/transactions')
+        fetch('/api/events', { headers: { 'Authorization': auth } }),
+        fetch('/api/transactions', { headers: { 'Authorization': auth } })
       ]);
       if (eRes.ok) setEvents(await eRes.json());
       if (tRes.ok) setTransactions(await tRes.json());
@@ -47,11 +48,15 @@ export default function Home() {
   const handleSaveEvent = async (event: EventType) => {
     const method = event._id ? 'PUT' : 'POST';
     const url = event._id ? `/api/events/${event._id}` : '/api/events';
+    const auth = localStorage.getItem('soaring_admin_session') || '';
 
     try {
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': auth
+        },
         body: JSON.stringify(event),
       });
 
@@ -67,8 +72,12 @@ export default function Home() {
   };
 
   const handleDeleteEvent = async (id: string) => {
+    const auth = localStorage.getItem('soaring_admin_session') || '';
     try {
-      const res = await fetch(`/api/events/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/events/${id}`, { 
+        method: 'DELETE',
+        headers: { 'Authorization': auth }
+      });
       if (res.ok) {
         fetchData();
         setIsModalOpen(false);
@@ -89,8 +98,12 @@ export default function Home() {
   };
 
   const handleDeleteTransaction = async (id: string) => {
+    const auth = localStorage.getItem('soaring_admin_session') || '';
     try {
-      const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/transactions/${id}`, { 
+        method: 'DELETE',
+        headers: { 'Authorization': auth }
+      });
       if (res.ok) {
         fetchData();
       }

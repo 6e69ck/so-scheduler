@@ -34,8 +34,11 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
   const [isSaving, setIsSaving] = useState(false);
 
   const fetchTransactions = async () => {
+    const auth = localStorage.getItem('soaring_admin_session') || '';
     try {
-      const res = await fetch('/api/transactions');
+      const res = await fetch('/api/transactions', {
+        headers: { 'Authorization': auth }
+      });
       if (res.ok) {
         const data = await res.json();
         setTransactions(data);
@@ -76,6 +79,7 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
     }
 
     setIsSaving(true);
+    const auth = localStorage.getItem('soaring_admin_session') || '';
 
     // Automated Internal Mapping
     let category: 'revenue' | 'reimbursement' = 'revenue';
@@ -103,7 +107,10 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
       const method = editingTransactionId ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': auth
+        },
         body: JSON.stringify(payload)
       });
       if (res.ok) {
@@ -120,8 +127,12 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
 
   const deleteTransaction = async (id: string) => {
     if (!confirm('Are you sure?')) return;
+    const auth = localStorage.getItem('soaring_admin_session') || '';
     try {
-      const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/transactions/${id}`, { 
+        method: 'DELETE',
+        headers: { 'Authorization': auth }
+      });
       if (res.ok) fetchTransactions();
     } catch (err) {
       console.error('Failed to delete', err);
