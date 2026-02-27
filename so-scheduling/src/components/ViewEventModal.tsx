@@ -94,7 +94,7 @@ export default function ViewEventModal({ event, transactions, onClose, onEdit }:
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 bg-crust p-4 rounded-xl border border-surface0">
+          <div className="grid grid-cols-2 gap-3 bg-crust p-4 rounded-xl border border-surface0">
             <div className="flex flex-col">
               <span className="text-[9px] uppercase font-black text-subtext0">{t('totalPrice')}</span>
               <span className="text-sm font-black">${event.totalPrice?.toFixed(2)}</span>
@@ -102,10 +102,6 @@ export default function ViewEventModal({ event, transactions, onClose, onEdit }:
             <div className="flex flex-col">
               <span className="text-[9px] uppercase font-black text-subtext0">{t('paidBalance')}</span>
               <span className="text-sm font-black text-green">${totalPaid.toFixed(2)}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[9px] uppercase font-black text-subtext0">{t('remainingBalance')}</span>
-              <span className="text-sm font-black text-accent">${remaining.toFixed(2)}</span>
             </div>
           </div>
 

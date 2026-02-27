@@ -333,6 +333,7 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
               <th className="px-2 py-3">Description</th>
               <th className="w-20 sm:w-24 px-2 py-3 text-right">Revenue (+)</th>
               <th className="w-20 sm:w-24 px-2 py-3 text-right">Expense (-)</th>
+              <th className="w-20 sm:w-24 px-2 py-3 text-right">Gross</th>
               <th className="hidden sm:table-cell w-24 px-4 py-3 text-center">Method</th>
               <th className="hidden sm:table-cell w-20 px-4 py-3 text-center">Actions</th>
             </tr>
@@ -340,6 +341,7 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
           <tbody className="divide-y divide-surface0">
             {allNodes.map((node) => {
               const isExpanded = expandedEventIds.has(node.id);
+              const gross = node.revenue - node.expense;
               return (
                 <React.Fragment key={node.id}>
                   {/* Parent Row */}
@@ -368,6 +370,9 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
                     </td>
                     <td className={`px-2 py-3 text-right font-bold text-[10px] sm:text-xs ${node.expense > 0 ? 'text-red bg-red/5' : 'text-subtext0 opacity-30'}`}>
                       {node.expense !== 0 ? formatAmount(node.expense, '-') : '-'}
+                    </td>
+                    <td className={`px-2 py-3 text-right font-bold text-[10px] sm:text-xs ${gross > 0 ? 'text-blue' : (gross < 0 ? 'text-mauve' : 'text-subtext0 opacity-30')}`}>
+                      {gross > 0 ? `$${gross.toFixed(2)}` : (gross < 0 ? `-$${Math.abs(gross).toFixed(2)}` : '-')}
                     </td>
                     <td className="hidden sm:table-cell px-4 py-3 text-center">
                       {node.source === 'event' ? <span className="text-[8px] text-overlay0 font-bold uppercase tracking-widest border border-overlay0/20 px-1 rounded">SHOW</span> : (
@@ -419,6 +424,7 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
                       <td className={`px-2 py-2 text-right text-[9px] font-bold ${child.category === 'reimbursement' ? (child.amount >= 0 ? 'text-red/70' : 'text-green/70') : 'text-subtext0 opacity-10'}`}>
                         {child.category === 'reimbursement' ? formatAmount(child.amount, '-') : '-'}
                       </td>
+                      <td className="px-2 py-2 text-right"></td>
                       <td className="hidden sm:table-cell px-4 py-2 text-center">
                         <span className="text-[8px] uppercase font-bold text-subtext0 border border-surface1 px-1 rounded">{t(child.type === 'e-transfer' ? 'eTransfer' : child.type)}</span>
                       </td>

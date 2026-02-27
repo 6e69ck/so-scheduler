@@ -189,6 +189,7 @@ export default function Home() {
           transactions={transactions}
           onClose={() => setViewingEvent(null)} 
           onEdit={(e) => { setViewingEvent(null); setEditingEvent(e); setIsModalOpen(true); }} 
+          onRefresh={() => fetchData()}
         />
       )}
 

@@ -9,14 +9,14 @@ import ReactMarkdown from 'react-markdown';
 
 const InvTopDetailHeader = React.memo(({ children }: { children: React.ReactNode }) => {
   // Using pt for physical size consistency
-  return (<h3 className="text-[10pt] font-bold text-gray-400 uppercase mb-4 border-b border-gray-400 pb-1">{children}</h3>)
+  return (<h3 className="text-[10pt] font-bold text-gray-400 uppercase mb-2 border-b border-gray-400 pb-1">{children}</h3>)
 });
 InvTopDetailHeader.displayName = 'InvTopDetailHeader';
 
 const InvTopDetailItem = React.memo(({ label, value, variant = 'bold' }: { label: string, value: string | React.ReactNode, variant?: 'bold' | 'medium' }) => {
   if (!value) return null;
   return (
-    <div>
+    <div className="mb-1">
       <span className="text-[9pt] font-bold text-gray-400 uppercase">{label}</span>
       <p className={`text-[9pt] ${variant === 'bold' ? 'font-bold text-gray-900' : 'font-medium text-gray-700'}`}>{value}</p>
     </div>
@@ -122,7 +122,7 @@ export default function InvoicePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-16 mb-12">
+            <div className="grid grid-cols-2 gap-16 mb-4">
               <div>
                 <InvTopDetailHeader>Bill To</InvTopDetailHeader>
                 <div className="space-y-3" style={{ fontSize: '10pt' }}>
@@ -148,38 +148,47 @@ export default function InvoicePage() {
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-gray-400">
-                    <th className="py-4 font-black text-gray-400 uppercase tracking-widest" style={{ fontSize: '10pt' }}>Description</th>
-                    <th className="py-4 text-right font-black text-gray-400 uppercase tracking-widest" style={{ fontSize: '10pt' }}>Amount</th>
+                    <th className="py-2 font-black text-gray-400 uppercase tracking-widest" style={{ fontSize: '10pt' }}>Description</th>
+                    <th className="py-2 text-right font-black text-gray-400 uppercase tracking-widest" style={{ fontSize: '10pt' }}>Amount</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {lineItems.map((item, i) => (
                     <tr key={i}>
-                      <td className="py-4">
+                      <td className="py-2">
                         <div className="flex flex-col">
-                          <span className="text-[9pt] font-bold text-gray-900" style={{ fontSize: '12pt' }}>{item.desc}</span>
-                          {item.subtext && <span className="text-gray-400 font-medium mt-1 uppercase tracking-wider" style={{ fontSize: '10pt' }}>{item.subtext}</span>}
+                          <span className="text-[11pt] font-bold text-gray-900">{item.desc}</span>
+                          {item.subtext && <span className="text-[7pt] text-gray-400 font-medium mt-1 uppercase tracking-wider">{item.subtext}</span>}
                         </div>
                       </td>
-                      <td className="py-8 text-right font-bold font-[14pt] text-gray-900">${item.amount.toFixed(2)}</td>
+                      <td className="text-right font-bold font-[12pt] text-gray-900">${item.amount.toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
 
-            {/* Totals */}
-            <div className="flex justify-end pt-8">
-              <div className="w-full max-w-[280px] border-t border-gray-400">
-                <div className="flex justify-between items-center py-2">
-                  <span className="font-bold font-[12pt] text-gray-400 uppercase tracking-[0.2em]">Total Due</span>
-                  <span className="text-[16pt] font-bold text-gray-900">${finalDue.toFixed(2)}</span>
+              {/* Totals */}
+              <div className="flex justify-end">
+                <div className="w-full max-w-[220px] border-t border-gray-400">
+                  <div className="flex justify-between items-center py-2">
+                    <span className="font-bold font-[12pt] text-gray-400 uppercase tracking-[0.1em]">Total Due</span>
+                    <span className="text-[12pt] font-bold text-gray-900">${finalDue.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
+
+              {snapshot.notes && (
+                <div className="mt-4 pt-2 border-t border-gray-100">
+                  <h4 className="text-[10pt] font-bold text-gray-400 uppercase mb-2">Notes</h4>
+                  <div className="text-sm text-gray-600 whitespace-pre-wrap bg-gray-50 p-2 rounded-lg border border-gray-100 print:bg-transparent print:p-0 print:border-none leading-relaxed">
+                    {snapshot.notes}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Footer */}
-            <div className="mt-12 pt-8 border-t border-gray-100 flex flex-col gap-2">
+            <div className="mt-8 pt-2 border-t border-gray-100 flex flex-col gap-2">
               <h4 className="font-black text-gray-400 uppercase tracking-widest" style={{ fontSize: '10pt' }}>CONTRACT AGREEMENT</h4>
               <p className="text-gray-500 font-medium leading-relaxed italic" style={{ fontSize: '10pt' }}>Upon payment of this invoice, the client officially agrees to the full Terms and Conditions listed on the following page.</p>
             </div>

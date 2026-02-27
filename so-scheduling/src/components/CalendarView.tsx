@@ -182,13 +182,14 @@ export default function CalendarView({ events, onEditEvent, onCreateEvent, onVie
           onView={(v) => setViewType(v)}
           step={15}
           timeslots={4}
-          min={new Date(0, 0, 0, 6, 0, 0)}
+          min={new Date(0, 0, 0, 0, 0, 0)}
           max={new Date(0, 0, 0, 23, 59, 59)}
           selectable
           longPressThreshold={300}
           onSelectSlot={handleSelectSlot}
           onSelectEvent={handleEventClick}
           toolbar={false}
+          scrollToTime={new Date()}
           eventPropGetter={eventStyleGetter}
           formats={{
             dayFormat: (date, culture, localizer) => {
