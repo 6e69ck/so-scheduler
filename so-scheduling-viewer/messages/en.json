@@ -9,6 +9,7 @@
     "day": "Day",
     "week": "Week",
     "month": "Month",
+    "year": "Year",
     "staffAssigned": "Staff Assigned",
     "noneAssigned": "None assigned",
     "joinShow": "Join Show",

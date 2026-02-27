@@ -52,16 +52,32 @@ export default function EventModal({ event, initialRange, onClose, onSave, onDel
     return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   };
 
-  const [formData, setFormData] = useState<EventType>(event ? {
-    ...event,
-    clientName: event.clientName || '',
-    companyName: event.companyName || ''
-  } : {
-    show: '', clientName: '', companyName: '', date: getInitialDate(), 
-    startTime: getInitialTime(initialRange?.start, '10:00'), 
-    endTime: getInitialTime(initialRange?.end, '11:00'),
-    location: '', notes: '', status: 'None', salesAssoc: '', clientPhone: '', clientEmail: '',
-    totalPrice: 0, paidBalance: 0, gear: [], staff: [], neededPeople: 0
+  const evalExpression = (expr: string): number => {
+    try {
+      const cleanExpr = expr.replace(/\$/g, '').replace(/[^\d.+\-*/()]/g, '');
+      if (!cleanExpr) return 0;
+      const result = new Function(`return ${cleanExpr}`)();
+      return typeof result === 'number' ? result : 0;
+    } catch {
+      return 0;
+    }
+  };
+
+  const [formData, setFormData] = useState<EventType>(() => {
+    if (event) {
+      return {
+        ...event,
+        clientName: event.clientName || '',
+        companyName: event.companyName || '',
+      };
+    }
+    return {
+      show: '', clientName: '', companyName: '', date: getInitialDate(), 
+      startTime: getInitialTime(initialRange?.start, '10:00'), 
+      endTime: getInitialTime(initialRange?.end, '11:00'),
+      location: '', notes: '', status: 'None', salesAssoc: '', clientPhone: '', clientEmail: '',
+      totalPrice: 0, paidBalance: 0, gear: [], staff: [], neededPeople: 0
+    };
   });
 
   React.useEffect(() => {
@@ -69,17 +85,13 @@ export default function EventModal({ event, initialRange, onClose, onSave, onDel
       setFormData({
         ...event,
         clientName: event.clientName || '',
-        companyName: event.companyName || ''
+        companyName: event.companyName || '',
       });
       setTotalPriceStr(event.totalPrice?.toString() || '');
-      setPaidBalanceStr(event.paidBalance?.toString() || '');
-      setTipsStr(event.tips?.toString() || '');
     }
   }, [event]);
 
   const [totalPriceStr, setTotalPriceStr] = useState(event?.totalPrice?.toString() || '');
-  const [paidBalanceStr, setPaidBalanceStr] = useState(event?.paidBalance?.toString() || '');
-  const [tipsStr, setTipsStr] = useState(event?.tips?.toString() || '');
   const [gearInput, setGearInput] = useState('');
   const [staffInput, setStaffInput] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -98,29 +110,9 @@ export default function EventModal({ event, initialRange, onClose, onSave, onDel
   };
 
   const handleTotalPriceBlurOrEnter = () => {
-    const cleanValue = totalPriceStr.replace('$', '').trim();
-    const num = parseFloat(cleanValue) || 0;
+    const num = evalExpression(totalPriceStr);
     setTotalPriceStr(num ? num.toString() : '');
     setFormData(prev => ({ ...prev, totalPrice: num }));
-  };
-
-  const handlePaidBalanceBlurOrEnter = () => {
-    let val = paidBalanceStr.replace('$', '').trim();
-    const tPrice = parseFloat(totalPriceStr) || 0;
-    if (val.endsWith('%')) {
-      const pct = parseFloat(val.replace('%', ''));
-      if (!isNaN(pct)) val = ((pct / 100) * tPrice).toFixed(2);
-    }
-    const num = parseFloat(val) || 0;
-    setPaidBalanceStr(num ? num.toString() : '');
-    setFormData(prev => ({ ...prev, paidBalance: num }));
-  };
-
-  const handleTipsBlurOrEnter = () => {
-    const cleanValue = tipsStr.replace('$', '').trim();
-    const num = parseFloat(cleanValue) || 0;
-    setTipsStr(num ? num.toString() : '');
-    setFormData(prev => ({ ...prev, tips: num }));
   };
 
   const handleInputKeyDown = (e: KeyboardEvent<HTMLInputElement>, handler: () => void) => {
@@ -165,26 +157,11 @@ export default function EventModal({ event, initialRange, onClose, onSave, onDel
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const handleDragEnd = (event: any) => {
-    const { active, over } = event;
-    if (active.id !== over?.id && formData.gear) {
-      const oldIndex = formData.gear.indexOf(active.id);
-      const newIndex = formData.gear.indexOf(over.id);
-      setFormData({ ...formData, gear: arrayMove(formData.gear, oldIndex, newIndex) });
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    let finalPaid = parseFloat(paidBalanceStr) || 0;
-    const tPrice = parseFloat(totalPriceStr) || 0;
-    if (paidBalanceStr.trim().endsWith('%')) {
-      const pct = parseFloat(paidBalanceStr.replace('%', ''));
-      if (!isNaN(pct)) finalPaid = (pct / 100) * tPrice;
-    }
-    const finalTips = parseFloat(tipsStr) || 0;
-    await onSave({ ...formData, totalPrice: tPrice, paidBalance: finalPaid, tips: finalTips });
+    const tPrice = evalExpression(totalPriceStr);
+    await onSave({ ...formData, totalPrice: tPrice });
     setIsSaving(false);
   };
 
@@ -271,29 +248,14 @@ export default function EventModal({ event, initialRange, onClose, onSave, onDel
               <input type="email" name="clientEmail" value={formData.clientEmail} onChange={handleChange} className="w-full bg-surface0 border border-surface1 text-text rounded-lg p-2.5 focus:ring-1 focus:ring-accent focus:border-accent outline-none transition placeholder:text-surface2 hover:border-surface2" />
             </div>
             
-            <div>
-              <label className="block text-sm font-bold text-subtext1 mb-1">{t('totalPrice')} ($)</label>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-bold text-subtext1 mb-1">Contract Amount / {t('totalPrice')} ($)</label>
               <input type="text" name="totalPrice" value={totalPriceStr} onChange={(e) => setTotalPriceStr(e.target.value)} onBlur={handleTotalPriceBlurOrEnter} onKeyDown={(e) => handleInputKeyDown(e, handleTotalPriceBlurOrEnter)} className="w-full bg-surface0 border border-surface1 text-text rounded-lg p-2.5 focus:ring-1 focus:ring-accent focus:border-accent outline-none transition hover:border-surface2" />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-bold text-subtext1 mb-1">{t('paidBalance')} ($, or %)</label>
-              <input type="text" name="paidBalance" value={paidBalanceStr} onChange={(e) => setPaidBalanceStr(e.target.value)} onBlur={handlePaidBalanceBlurOrEnter} onKeyDown={(e) => handleInputKeyDown(e, handlePaidBalanceBlurOrEnter)} className="w-full bg-surface0 border border-surface1 text-text rounded-lg p-2.5 focus:ring-1 focus:ring-accent focus:border-accent outline-none transition hover:border-surface2" />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-subtext1 mb-1">{t('tips')} ($)</label>
-              <input type="text" name="tips" value={tipsStr} onChange={(e) => setTipsStr(e.target.value)} onBlur={handleTipsBlurOrEnter} onKeyDown={(e) => handleInputKeyDown(e, handleTipsBlurOrEnter)} className="w-full bg-surface0 border border-surface1 text-text rounded-lg p-2.5 focus:ring-1 focus:ring-accent focus:border-accent outline-none transition hover:border-surface2" />
             </div>
 
             <div>
               <label className="block text-sm font-bold text-subtext1 mb-1">{t('neededPeople')}</label>
               <input type="number" name="neededPeople" value={formData.neededPeople} onChange={handleChange} className="w-full bg-surface0 border border-surface1 text-text rounded-lg p-2.5 focus:ring-1 focus:ring-accent focus:border-accent outline-none transition hover:border-surface2" />
-            </div>
-            
-            <div className="md:col-span-2 bg-crust border border-surface0 text-accent p-3 rounded-lg flex justify-between items-center">
-              <span className="font-bold text-sm text-subtext1">{t('remainingBalance')}:</span>
-              <span className="font-bold text-lg">${((parseFloat(totalPriceStr) || 0) - (formData.paidBalance || 0)).toFixed(2)}</span>
             </div>
 
             <div className="md:col-span-2">
@@ -318,7 +280,14 @@ export default function EventModal({ event, initialRange, onClose, onSave, onDel
             <div className="md:col-span-2">
               <label className="block text-sm font-bold text-subtext1 mb-1">{t('equipment')}</label>
               <div className="w-full bg-surface0 border border-surface1 rounded-lg p-2 flex flex-wrap gap-2 focus-within:ring-1 focus-within:ring-accent focus-within:border-accent transition min-h-[46px] hover:border-surface2">
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => {
+                  const { active, over } = e;
+                  if (active.id !== over?.id && formData.gear) {
+                    const oldIndex = formData.gear.indexOf(active.id as string);
+                    const newIndex = formData.gear.indexOf(over!.id as string);
+                    setFormData({ ...formData, gear: arrayMove(formData.gear, oldIndex, newIndex) });
+                  }
+                }}>
                   <SortableContext items={formData.gear || []} strategy={horizontalListSortingStrategy}>
                     {formData.gear?.map((g) => <SortableEquipmentItem key={g} id={g} item={g} onRemove={removeGear} />)}
                   </SortableContext>

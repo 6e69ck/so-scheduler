@@ -1,209 +1,292 @@
-import React from 'react';
-import dbConnect from '@/lib/mongodb';
-import Invoice from '@/models/Invoice';
-import { notFound } from 'next/navigation';
-import PrintButton from '../../invoice/[id]/PrintButton';
-import fs from 'fs';
-import path from 'path';
+'use client';
+
+
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { InvoiceType } from '@/types';
+import { Loader2, Phone, Mail, Clock, MapPin, Printer } from 'lucide-react';
+import moment from 'moment';
+import { useTranslations } from 'next-intl';
 import ReactMarkdown from 'react-markdown';
 
-export default async function ImmutableInvoicePage(props: { params: Promise<{ hash: string }> }) {
-  const params = await props.params;
-  
-  await dbConnect();
-  
-  const invoice = await Invoice.findOne({ hash: params.hash });
-  if (!invoice) {
-    notFound();
-  }
+function InvHeader({ children }: { children: React.ReactNode }) {
+  return (<h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 border-b-1 border-gray-400 pb-1">{children}</h3>)
+}
 
-  const event = invoice.snapshot;
-  const isDeposit = invoice.type === 'deposit';
-  const invoiceType = isDeposit ? 'Deposit' : 'Remaining Balance';
-  const idSuffix = isDeposit ? 'a' : 'b';
+export default function InvoicePage() {
+  const params = useParams();
+  const t = useTranslations('Common');
+  const [invoice, setInvoice] = useState<InvoiceType | null>(null);
+  const [terms, setTerms] = useState<string>('');
+  const [loading, setLoading] = useState(true);
 
-  const formatPhone = (phone: string) => {
-    if (!phone) return '';
-    const cleaned = ('' + phone).replace(/\D/g, '');
-    const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
-    if (match) {
-      return `${match[1]}-${match[2]}-${match[3]}`;
-    }
-    return phone;
-  };
-  
-  const totalPrice = event.totalPrice || 0;
-  const paidBalance = event.paidBalance || 0;
-  let amountDue = 0;
-  if (isDeposit) {
-    amountDue = totalPrice * 0.25;
-  } else {
-    amountDue = totalPrice - paidBalance;
-  }
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [invRes, termsRes] = await Promise.all([
+          fetch(`/api/invoices?hash=${params.hash}`),
+          fetch('/api/terms')
+        ]);
+        if (invRes.ok) setInvoice(await resToJSON(invRes));
+        if (termsRes.ok) {
+          const data = await resToJSON(termsRes);
+          setTerms(data.content);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Format date correctly from stored string mapping to UTC
-  const d = new Date(event.date);
-  const year = d.getUTCFullYear();
-  const month = d.getUTCMonth();
-  const day = d.getUTCDate();
-  const dateStr = new Date(year, month, day).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const resToJSON = (res: Response) => res.json();
+    fetchData();
+  }, [params.hash]);
 
-  let termsContent = '';
-  try {
-    const termsPath = path.join(process.cwd(), 'Terms.md');
-    termsContent = fs.readFileSync(termsPath, 'utf8');
-  } catch (err) {
-    termsContent = 'Terms and Conditions not available.';
+  if (loading) return <div className="h-screen flex items-center justify-center bg-white text-gray-900"><Loader2 className="w-8 h-8 animate-spin" /></div>;
+  if (!invoice) return <div className="h-screen flex items-center justify-center bg-white text-gray-900">Invoice not found</div>;
+
+  const { snapshot, type, customLineItems, customTotal } = invoice;
+  const agreedTotal = snapshot.totalPrice || 0;
+
+  let lineItems: { desc: string, subtext?: string, amount: number }[] = [];
+  let finalDue = 0;
+
+  if (type === 'deposit') {
+    lineItems = [{
+      desc: `Security Deposit`,
+      subtext: `25% of Agreed Contract Total ($${agreedTotal.toFixed(2)})`,
+      amount: agreedTotal * 0.25
+    }];
+    finalDue = agreedTotal * 0.25;
+  } else if (type === 'remaining') {
+    lineItems = [{
+      desc: `Final Performance Balance`,
+      subtext: `75% of Agreed Contract Total ($${agreedTotal.toFixed(2)})`,
+      amount: agreedTotal * 0.75
+    }];
+    finalDue = agreedTotal * 0.75;
+  } else if (type === 'custom') {
+    lineItems = (customLineItems || []).map(li => ({ desc: li.description, amount: li.amount }));
+    finalDue = customTotal || lineItems.reduce((acc, curr) => acc + curr.amount, 0);
   }
 
   return (
-    <div className="min-h-screen bg-gray-200 text-gray-900 font-sans print:bg-white p-0 sm:p-8 print:p-0 flex flex-col items-center">
-      {/* Page 1: Invoice */}
-      <div className="bg-white shadow-2xl print:shadow-none w-full max-w-[8.5in] h-auto min-h-[11in] print:h-[11in] p-12 sm:p-16 print:p-16 flex flex-col justify-between box-border relative print:m-0 mb-8 overflow-hidden">
-        <div>
-          <div className="flex justify-between items-start mb-12 border-b-2 border-gray-200 pb-8">
-            <div className="flex items-center gap-6">
-              <div className="relative w-24 h-24 overflow-hidden rounded-xl shadow-sm border border-gray-100">
-                <img 
-                  src="/logo.jpg" 
-                  alt="Soaring Eagles Logo" 
-                  className="w-full h-full object-cover"
-                />
+    <div className="min-h-screen bg-gray-400 py-12 px-4 sm:px-6 font-sans text-gray-900 print:bg-white print:py-0 print:px-0">
+
+      {/* Floating Print Button */}
+      <button
+        onClick={() => window.print()}
+        className="fixed bottom-8 right-8 z-[150] no-print flex items-center gap-3 px-8 py-4 bg-gray-900 text-white rounded-full font-black uppercase text-sm tracking-widest hover:bg-black transition shadow-2xl scale-100 hover:scale-105 active:scale-95 duration-200 border-2 border-white/10"
+      >
+        <Printer className="w-5 h-5" /> {t('print')}
+      </button>
+
+      <div className="max-w-full mx-auto space-y-12 print:space-y-0 flex flex-col items-center pb-24 print:pb-0">
+
+        {/* Invoice Page */}
+        <div className="bg-white shadow-2xl w-[8.5in] h-[11in] print:w-full print:h-screen print:shadow-none print:border-none printable-area flex flex-col shrink-0 overflow-hidden relative p-[0.75in] print:p-[0.5in]">
+          <div className="flex flex-col h-full">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-10">
+              <div className="flex items-center gap-6">
+                <img src="/logo.jpg" alt="Logo" className="w-20 h-20 rounded-xl object-cover" />
+                <div className="flex flex-col">
+                  <h1 className="text-2xl font-black tracking-tighter uppercase leading-none">The <span className="text-pink-700">Soaring Eagles</span></h1>
+                  <p className="text-[11px] text-gray-500 font-black tracking-[0.2em] mt-2 uppercase">Lion & Dragon Dance</p>
+                </div>
+              </div>
+              <div className="text-right flex flex-col">
+                <h2 className="text-2xl font-black tracking-tighter uppercase leading-none text-gray-900">
+                  {t('invoice')} #{String(snapshot.eventNumber || 0).padStart(4, '0')}
+                </h2>
+                <p className="text-[11px] text-gray-400 font-black tracking-[0.2em] mt-2 uppercase">
+                  {moment(invoice.createdAt).format('MMMM D, YYYY')}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-16 mb-12">
+              <div>
+                <InvHeader>{t('billTo')}</InvHeader>
+                <div className="space-y-3 text-xs">
+                  {snapshot.companyName && (
+                    <div>
+                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Company</span>
+                      <p className="font-bold text-gray-900">{snapshot.companyName}</p>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Client Name</span>
+                    <p className="font-bold text-gray-900">{snapshot.clientName}</p>
+                  </div>
+                  {snapshot.clientPhone && (
+                    <div>
+                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Phone Number</span>
+                      <p className="font-medium text-gray-700">{snapshot.clientPhone}</p>
+                    </div>
+                  )}
+                  {snapshot.clientEmail && (
+                    <div>
+                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Email Address</span>
+                      <p className="font-medium text-gray-700">{snapshot.clientEmail}</p>
+                    </div>
+                  )}
+                </div>
               </div>
               <div>
-                <h1 className="text-5xl font-black tracking-tighter text-gray-900 uppercase leading-none">INVOICE</h1>
-                <p className="text-xl text-gray-500 mt-3 font-semibold tracking-tight">{invoiceType}</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <h2 className="text-2xl font-bold text-gray-900 leading-tight">The Soaring Eagles</h2>
-              <p className="text-gray-500 mt-1 text-sm font-medium">Invoice Date: {new Date(invoice.createdAt).toLocaleDateString('en-US')}</p>
-              <div className="mt-4 text-right">
-                <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-gray-400 block mb-1">Invoice ID</span>
-                <span className="text-3xl font-bold text-gray-900 tracking-tighter">#{String(event.eventNumber ?? 1).padStart(4, '0')}{idSuffix}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-x-12 mb-12">
-            <div>
-              <h3 className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400 mb-4">Bill To</h3>
-              <div className="space-y-1">
-                {event.companyName && (
-                  <span className="font-bold text-xl text-gray-900 leading-tight block">
-                    {event.companyName}
-                  </span>
-                )}
-                <span className={`${event.companyName ? 'text-gray-700 text-lg font-semibold' : 'font-bold text-xl text-gray-900'} leading-tight block`}>
-                  {event.clientName}
-                </span>
-                <div className="pt-6 flex flex-col gap-4 text-sm text-gray-600 font-medium">
-                  {event.clientPhone && (
-                    <div>
-                      <strong className="block text-gray-400 text-[10px] uppercase tracking-widest mb-1 font-semibold">Phone</strong>
-                      <span className="text-gray-900">{formatPhone(event.clientPhone)}</span>
-                    </div>
-                  )}
-                  {event.clientEmail && (
-                    <div>
-                      <strong className="block text-gray-400 text-[10px] uppercase tracking-widest mb-1 font-semibold">Email</strong>
-                      <span className="text-gray-900">{event.clientEmail}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400 mb-4">Event Details</h3>
-              <div className="space-y-4 text-sm">
-                <div>
-                  <strong className="block text-gray-400 text-[10px] uppercase tracking-widest mb-1 font-semibold">Date</strong>
-                  <span className="text-gray-900 font-semibold text-lg">{dateStr}</span>
-                </div>
-                <div>
-                  <strong className="block text-gray-400 text-[10px] uppercase tracking-widest mb-1 font-semibold">Performance Time</strong>
-                  <span className="text-gray-900 font-semibold text-lg">{event.startTime} - {event.endTime}</span>
-                </div>
-                {event.location && (
+                <InvHeader>{t('eventDetails')}</InvHeader>
+                <div className="space-y-3 text-xs">
                   <div>
-                    <strong className="block text-gray-400 text-[10px] uppercase tracking-widest mb-1 font-semibold">Location</strong>
-                    <span className="text-gray-900 font-semibold text-lg">{event.location}</span>
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Show / Performance</span>
+                    <p className="font-bold text-gray-900">{snapshot.show}</p>
                   </div>
-                )}
+                  <div>
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Performance Date</span>
+                    <p className="font-bold text-gray-900">{moment.utc(snapshot.date).format('dddd, MMMM D, YYYY')}</p>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Performance Time</span>
+                    <p className="font-bold text-gray-900">{snapshot.startTime} - {snapshot.endTime}</p>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Location</span>
+                    <p className="font-medium text-gray-700">{snapshot.location}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Items Table */}
+            <div className="flex-1">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b-1 border-gray-400">
+                    <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('description')}</th>
+                    <th className="py-4 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('amount')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {lineItems.map((item, i) => (
+                    <tr key={i}>
+                      <td className="py-4">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-gray-900 text-base">{item.desc}</span>
+                          {item.subtext && <span className="text-[11px] text-gray-400 font-medium mt-1 uppercase tracking-wider">{item.subtext}</span>}
+                        </div>
+                      </td>
+                      <td className="py-8 text-right font-black text-gray-900 text-lg">${item.amount.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Totals */}
+            <div className="flex justify-end pt-8">
+              <div className="w-full max-w-[280px] border-t-1 border-gray-400">
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">{t('totalDue')}</span>
+                  <span className="text-2xl font-black text-gray-900">${finalDue.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="mt-12 pt-8 border-t border-gray-100 flex flex-col gap-2">
+              <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('contractAgreement')}</h4>
+              <p className="text-[11px] text-gray-500 font-medium leading-relaxed italic">{t('contractText')}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Terms Page */}
+        <div className="bg-white shadow-2xl w-[8.5in] h-[11in] print:w-full print:h-screen print:shadow-none print:border-none print:break-before-page printable-area flex flex-col shrink-0 overflow-hidden relative p-[0.75in] print:p-[0.5in]">
+          <div className="flex flex-col h-full overflow-hidden">
+            <div className="border-b-1 border-gray-700 pb-4 mb-1 flex justify-between items-end shrink-0">
+              <h2 className="text-3xl font-black uppercase tracking-tighter">{t('termsTitle')}</h2>
+              {/* <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Page 2 / 2</span> */}
+            </div>
+
+            <div className="flex-1 overflow-hidden">
+              <div className="terms-markdown-container">
+                <ReactMarkdown>{terms}</ReactMarkdown>
+              </div>
+            </div>
+
+            <div className="mt-auto pt-8 border-t border-gray-100 flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-3">
+                <img src="/logo.jpg" alt="Logo" className="w-10 h-10 rounded-lg opacity-50 grayscale" />
+                <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">The Soaring Eagles</span>
               </div>
             </div>
           </div>
-
-          {event.notes && (
-            <div className="mb-10">
-               <h3 className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400 mb-3">Notes</h3>
-               <div className="text-sm text-gray-600 whitespace-pre-wrap bg-gray-50 p-5 rounded-lg border border-gray-100 print:bg-transparent print:p-0 print:border-none leading-relaxed">
-                 {event.notes}
-               </div>
-            </div>
-          )}
-
-          <div className="mt-12">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b-2 border-gray-200">
-                  <th className="py-3 font-bold text-gray-400 uppercase text-[10px] tracking-widest">Description</th>
-                  <th className="py-3 text-right font-bold text-gray-400 uppercase text-[10px] tracking-widest">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-b border-gray-50">
-                  <td className="py-6">
-                    <div className="font-bold text-gray-900 text-base">{invoiceType}</div>
-                    <div className="text-[10px] text-gray-400 mt-2 font-medium uppercase tracking-tight">
-                      {isDeposit 
-                        ? `Calculated as 25% of the total amount ($${totalPrice.toFixed(2)})`
-                        : `Calculated as total amount ($${totalPrice.toFixed(2)}) minus paid balance ($${paidBalance.toFixed(2)})`
-                      }
-                    </div>
-                  </td>
-                  <td className="py-6 text-right font-bold text-gray-900 text-xl">${amountDue.toFixed(2)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="flex justify-between items-end mt-16 border-t border-gray-100 pt-8 print:border-gray-200">
-           <div className="text-[10px] leading-relaxed text-gray-400 max-w-sm font-medium italic">
-             <strong className="text-gray-500 not-italic block mb-1">CONTRACT AGREEMENT:</strong>
-             Upon payment of this invoice, the client officially agrees to the full Terms and Conditions listed on the following page.
-           </div>
-           <div className="text-right w-full max-w-xs">
-             <div className="flex justify-between text-sm mb-1 text-gray-500 font-medium">
-               <span>SUBTOTAL</span>
-               <span>${amountDue.toFixed(2)}</span>
-             </div>
-             <div className="flex justify-between text-2xl font-bold text-gray-900 mt-1">
-               <span>TOTAL DUE</span>
-               <span>${amountDue.toFixed(2)}</span>
-             </div>
-           </div>
         </div>
       </div>
 
-      {/* Page 2: Terms and Conditions */}
-      <div className="bg-white shadow-2xl print:shadow-none w-full max-w-[8.5in] h-auto min-h-[11in] print:h-[11in] p-12 sm:p-16 print:p-16 box-border print:break-before-page relative overflow-hidden flex flex-col">
-        <div className="border-b border-gray-200 pb-4 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 uppercase tracking-tight">Terms and Conditions</h2>
-        </div>
-        <div className="invoice-terms flex-1">
-          <ReactMarkdown>{termsContent}</ReactMarkdown>
-        </div>
-        <div className="mt-8 pt-4 border-t border-gray-50 text-[9px] text-gray-400 text-center uppercase font-medium tracking-widest">
-          © {new Date().getFullYear()} The Soaring Eagles Association. All rights reserved.
-        </div>
-      </div>
+      <style jsx global>{`
+        .terms-markdown-container {
+          font-family: var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+          font-size: 10px;
+          line-height: 1.4;
+          color: #374151;
+        }
+        .terms-markdown-container h1, 
+        .terms-markdown-container h2, 
+        .terms-markdown-container h3, 
+        .terms-markdown-container h4 {
+          font-family: var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-top: 1.5em;
+          margin-bottom: 0.5em;
+          color: #111827;
+        }
+        .terms-markdown-container h1 { font-size: 1.25em; }
+        .terms-markdown-container h2 { font-size: 1.1em; }
+        .terms-markdown-container h3 { font-size: 1em; }
+        .terms-markdown-container p { margin-bottom: 0.75em; text-align: justify; }
+        .terms-markdown-container ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1em; }
+        .terms-markdown-container li { margin-bottom: 0.4em; }
 
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 print:hidden z-50">
-        <PrintButton />
-      </div>
+        @media screen {
+          .printable-area {
+            transform-origin: top center;
+          }
+          @media (max-width: 8.5in) {
+            .printable-area { transform: scale(calc(100vw / 850)); }
+          }
+        }
+
+        @media print {
+          @page {
+            margin: 0;
+            size: letter;
+          }
+          body {
+            background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+          .printable-area {
+            width: 8.5in !important;
+            height: 11in !important;
+            min-width: 8.5in !important;
+            min-height: 11in !important;
+            margin: 0 !important;
+            padding: 0.5in !important;
+            box-shadow: none !important;
+            transform: none !important;
+            position: relative !important;
+            left: 0 !important;
+            top: 0 !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

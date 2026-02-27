@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Phone, MapPin, Mai
 import moment from 'moment';
 import { useTranslations } from 'next-intl';
 
-type ViewType = 'day' | 'week' | 'month';
+type ViewType = 'day' | 'week' | 'month' | 'year';
 
 interface Props {
   events: EventType[];
@@ -40,8 +40,10 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
       return eventDateStr === selectedDate;
     } else if (viewType === 'week') {
       return eventMoment.isSame(targetMoment, 'week');
-    } else {
+    } else if (viewType === 'month') {
       return eventMoment.isSame(targetMoment, 'month');
+    } else {
+      return eventMoment.isSame(targetMoment, 'year');
     }
   }).sort((a, b) => {
     const dateA = moment.utc(a.date).format('YYYY-MM-DD');
@@ -94,7 +96,8 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
       const end = moment(mDate).endOf('week');
       return `${start.format('MMM D')} - ${end.format('D, YYYY')}`;
     }
-    return mDate.format('MMMM YYYY');
+    if (viewType === 'month') return mDate.format('MMMM YYYY');
+    return mDate.format('YYYY');
   };
 
   return (
@@ -106,13 +109,13 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
             {t('summary')}
           </h2>
           <div className="flex bg-[#181825] rounded-md p-0.5 border border-[#313244]">
-            {(['day', 'week', 'month'] as ViewType[]).map((v) => (
+            {(['day', 'week', 'month', 'year'] as ViewType[]).map((v) => (
               <button
                 key={v}
                 onClick={() => setViewType(v)}
                 className={`px-2 py-1 rounded text-[10px] sm:text-xs font-bold transition-all ${viewType === v ? 'bg-[#313244] text-[#cba6f7] shadow-sm' : 'text-[#a6adc8] hover:text-[#cdd6f4]'}`}
               >
-                {v === 'day' ? t('day') : v === 'week' ? t('week') : t('month')}
+                {v === 'day' ? t('day') : v === 'week' ? t('week') : v === 'month' ? t('month') : t('year')}
               </button>
             ))}
           </div>

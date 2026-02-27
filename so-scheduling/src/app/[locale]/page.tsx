@@ -1,12 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
 import CalendarView from '@/components/CalendarView';
-import SpreadsheetView from '@/components/SpreadsheetView';
+import LedgerView from '@/components/LedgerView';
 import SummaryView from '@/components/SummaryView';
 import EventModal from '@/components/EventModal';
 import ViewEventModal from '@/components/ViewEventModal';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-import { EventType } from '@/types';
+import { EventType, TransactionType } from '@/types';
 import { Calendar, LayoutGrid, FileText, Loader2 } from 'lucide-react';
 import moment from 'moment';
 import { useTranslations } from 'next-intl';
@@ -15,6 +15,7 @@ export default function Home() {
   const t = useTranslations('Common');
   const [view, setView] = useState<'calendar' | 'spreadsheet' | 'summary'>('calendar');
   const [events, setEvents] = useState<EventType[]>([]);
+  const [transactions, setTransactions] = useState<TransactionType[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EventType | null>(null);
@@ -24,22 +25,23 @@ export default function Home() {
   // Use local date string for selectedDate to match calendar display
   const [selectedDate, setSelectedDate] = useState<string>(moment().format('YYYY-MM-DD'));
 
-  const fetchEvents = async () => {
+  const fetchData = async () => {
     try {
-      const res = await fetch('/api/events');
-      if (res.ok) {
-        const data = await res.json();
-        setEvents(data);
-      }
+      const [eRes, tRes] = await Promise.all([
+        fetch('/api/events'),
+        fetch('/api/transactions')
+      ]);
+      if (eRes.ok) setEvents(await eRes.json());
+      if (tRes.ok) setTransactions(await tRes.json());
     } catch (err) {
-      console.error('Failed to fetch events', err);
+      console.error('Failed to fetch data', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchEvents();
+    fetchData();
   }, []);
 
   const handleSaveEvent = async (event: EventType) => {
@@ -54,7 +56,7 @@ export default function Home() {
       });
 
       if (res.ok) {
-        fetchEvents();
+        fetchData();
         setIsModalOpen(false);
         setEditingEvent(null);
         setViewingEvent(null);
@@ -68,7 +70,7 @@ export default function Home() {
     try {
       const res = await fetch(`/api/events/${id}`, { method: 'DELETE' });
       if (res.ok) {
-        fetchEvents();
+        fetchData();
         setIsModalOpen(false);
         setEditingEvent(null);
         setViewingEvent(null);
@@ -84,6 +86,17 @@ export default function Home() {
     const dateStr = moment(event.date).format('YYYY-MM-DD');
     setSelectedDate(dateStr);
     setViewingEvent(event);
+  };
+
+  const handleDeleteTransaction = async (id: string) => {
+    try {
+      const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (err) {
+      console.error('Failed to delete transaction', err);
+    }
   };
 
   if (loading) {
@@ -154,15 +167,17 @@ export default function Home() {
           ) : view === 'summary' ? (
             <SummaryView 
               events={events} 
+              transactions={transactions}
               onViewEvent={setViewingEvent}
               selectedDate={selectedDate}
               setSelectedDate={setSelectedDate}
             />
           ) : (
-            <SpreadsheetView 
+            <LedgerView 
               events={events} 
               onEditEvent={(e) => { setEditingEvent(e); setIsModalOpen(true); }} 
               onViewEvent={handleViewEvent}
+              onSaveEvent={handleSaveEvent}
             />
           )}
         </div>
@@ -171,6 +186,7 @@ export default function Home() {
       {viewingEvent && (
         <ViewEventModal 
           event={viewingEvent} 
+          transactions={transactions}
           onClose={() => setViewingEvent(null)} 
           onEdit={(e) => { setViewingEvent(null); setEditingEvent(e); setIsModalOpen(true); }} 
         />

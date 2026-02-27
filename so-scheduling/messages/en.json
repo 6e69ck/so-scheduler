@@ -7,6 +7,7 @@
     "day": "Day",
     "week": "Week",
     "month": "Month",
+    "year": "Year",
     "time": "Time",
     "startTime": "Start Time",
     "endTime": "End Time",
@@ -30,8 +31,10 @@
     "calendar": "Calendar",
     "summary": "Summary",
     "list": "List",
+    "ledger": "Ledger",
     "adminSummary": "Admin Summary",
     "noEvents": "No events for this period.",
+    "noneAssigned": "None assigned",
     "close": "Close",
     "editDetails": "Edit Details",
     "genDeposit": "Gen. Deposit",
@@ -65,6 +68,34 @@
       "Planning": "Planning",
       "Confirmed": "Confirmed",
       "Completed": "Completed"
-    }
+    },
+    "transactions": "Transactions",
+    "addRevenue": "Add Revenue",
+    "addReimbursement": "Add Reimbursement",
+    "revenue": "Revenue",
+    "reimbursement": "Reimbursement",
+    "cash": "Cash",
+    "cheque": "Cheque",
+    "eTransfer": "E-Transfer",
+    "credit": "Credit",
+    "reimbursement": "Reimbursement",
+    "type": "Type",
+    "account": "Account",
+    "accounts": {
+      "Bank": "Bank",
+      "Member Reimbursements": "Member Reimbursements",
+      "Fees": "Fees",
+      "Tips": "Tips"
+    },
+    "category": "Category",
+    "intents": {
+      "payment": "Payment",
+      "tip": "Tip",
+      "fee": "Fee",
+      "reimbursement": "Reimbursement"
+    },
+    "receipt": "Receipt",
+    "uploadReceipt": "Upload Receipt",
+    "netProfit": "Net Profit"
   }
 }

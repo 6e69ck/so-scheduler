@@ -13,11 +13,26 @@ export interface EventType {
   clientPhone: string;
   clientEmail: string;
   totalPrice: number;
-  paidBalance: number;
-  remainingBalance?: number;
   gear: string[];
   staff: string[];
   neededPeople: number;
   eventNumber?: number;
-  tips?: number;
+  transactions?: TransactionType[];
+}
+
+export type TransactionAccount = 'Bank' | 'Member Reimbursements' | 'Fees' | 'Tips';
+export type TransactionIntent = 'payment' | 'tip' | 'fee' | 'reimbursement';
+
+export interface TransactionType {
+  _id?: string;
+  amount: number;
+  type: 'cash' | 'cheque' | 'e-transfer' | 'credit';
+  category: 'revenue' | 'reimbursement';
+  account: TransactionAccount;
+  intent: TransactionIntent;
+  date: string;
+  notes?: string;
+  receiptUrl?: string;
+  eventId?: string;
+  createdAt?: string;
 }

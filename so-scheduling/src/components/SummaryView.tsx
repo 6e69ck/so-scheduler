@@ -1,26 +1,27 @@
 'use client';
 
 import React, { useState } from 'react';
-import { EventType } from '@/types';
+import { EventType, TransactionType } from '@/types';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Phone, MapPin, Mail, Users, Package, StickyNote } from 'lucide-react';
 import moment from 'moment';
 import { useTranslations } from 'next-intl';
 
-type ViewType = 'day' | 'week' | 'month';
+type ViewType = 'day' | 'week' | 'month' | 'year';
 
 interface Props {
   events: EventType[];
+  transactions: TransactionType[];
   onViewEvent: (e: EventType) => void;
   selectedDate: string; // "YYYY-MM-DD"
   setSelectedDate: (date: string) => void;
 }
 
-export default function SummaryView({ events, onViewEvent, selectedDate, setSelectedDate }: Props) {
+export default function SummaryView({ events, transactions, onViewEvent, selectedDate, setSelectedDate }: Props) {
   const t = useTranslations('Common');
   const [viewType, setViewType] = useState<ViewType>('day');
 
   const filteredEvents = events.filter(e => {
-    // Standardize to UTC for filtering to prevent local timezone shifts
+    // Compare using UTC strings to avoid timezone shifts
     const eventDateStr = moment.utc(e.date).format('YYYY-MM-DD');
     const targetMoment = moment.utc(selectedDate, 'YYYY-MM-DD');
     const eventMoment = moment.utc(eventDateStr, 'YYYY-MM-DD');
@@ -29,10 +30,13 @@ export default function SummaryView({ events, onViewEvent, selectedDate, setSele
       return eventDateStr === selectedDate;
     } else if (viewType === 'week') {
       return eventMoment.isSame(targetMoment, 'week');
-    } else {
+    } else if (viewType === 'month') {
       return eventMoment.isSame(targetMoment, 'month');
+    } else {
+      return eventMoment.isSame(targetMoment, 'year');
     }
   }).sort((a, b) => {
+    // Compare dates first, then times
     const dateA = moment.utc(a.date).format('YYYY-MM-DD');
     const dateB = moment.utc(b.date).format('YYYY-MM-DD');
     if (dateA !== dateB) return dateA.localeCompare(dateB);
@@ -65,7 +69,8 @@ export default function SummaryView({ events, onViewEvent, selectedDate, setSele
       const end = moment(mDate).endOf('week');
       return `${start.format('MMM D')} - ${end.format('D, YYYY')}`;
     }
-    return mDate.format('MMMM YYYY');
+    if (viewType === 'month') return mDate.format('MMMM YYYY');
+    return mDate.format('YYYY');
   };
 
   return (
@@ -77,13 +82,13 @@ export default function SummaryView({ events, onViewEvent, selectedDate, setSele
             {t('adminSummary')}
           </h2>
           <div className="flex bg-crust rounded-md p-0.5 border border-surface0">
-            {(['day', 'week', 'month'] as ViewType[]).map((v) => (
+            {(['day', 'week', 'month', 'year'] as ViewType[]).map((v) => (
               <button
                 key={v}
                 onClick={() => setViewType(v)}
                 className={`px-3 py-1 rounded text-xs font-bold transition-all ${viewType === v ? 'bg-surface0 text-accent shadow-sm' : 'text-subtext0 hover:text-text'}`}
               >
-                {v === 'day' ? t('day') : v === 'week' ? t('week') : t('month')}
+                {v === 'day' ? t('day') : v === 'week' ? t('week') : v === 'month' ? t('month') : t('year')}
               </button>
             ))}
           </div>
@@ -103,8 +108,13 @@ export default function SummaryView({ events, onViewEvent, selectedDate, setSele
           {filteredEvents.map((e, i) => {
             const assignedCount = e.staff?.length || 0;
             const neededCount = e.neededPeople || 0;
-            const remaining = (e.totalPrice || 0) - (e.paidBalance || 0);
             
+            const linkedTransactions = transactions.filter(tr => tr.eventId === e._id);
+            const totalPaid = linkedTransactions
+              .filter(tr => tr.category === 'revenue')
+              .reduce((acc, curr) => acc + curr.amount, 0);
+            
+            const remaining = (e.totalPrice || 0) - totalPaid;
             const statusColor = neededCount > 0 && assignedCount < neededCount ? '#f38ba8' : '#a6e3a1';
             
             return (
@@ -153,22 +163,18 @@ export default function SummaryView({ events, onViewEvent, selectedDate, setSele
                     </div>
                   </div>
 
-                  <div className="flex-1 bg-surface0/50 border border-surface1/30 rounded-md p-2 grid grid-cols-2 lg:grid-cols-4 gap-2 items-center">
+                  <div className="flex-1 bg-surface0/50 border border-surface1/30 rounded-md p-2 grid grid-cols-2 lg:grid-cols-3 gap-2 items-center">
                     <div className="flex flex-col">
                       <span className="text-[9px] uppercase text-subtext0 font-bold">{t('totalPrice')}</span>
                       <span className="text-xs font-bold text-text">${e.totalPrice?.toFixed(2) || '0.00'}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-[9px] uppercase text-subtext0 font-bold">{t('paidBalance')}</span>
-                      <span className="text-xs font-bold text-[#a6e3a1]">${e.paidBalance?.toFixed(2) || '0.00'}</span>
+                      <span className="text-xs font-bold text-[#a6e3a1]">${totalPaid.toFixed(2)}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-[9px] uppercase text-subtext0 font-bold">{t('remainingBalance')}</span>
                       <span className="text-xs font-bold text-accent">${remaining.toFixed(2)}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[9px] uppercase text-subtext0 font-bold">{t('tips')}</span>
-                      <span className="text-xs italic text-subtext1">${e.tips?.toFixed(2) || '0.00'}</span>
                     </div>
                   </div>
 
@@ -184,7 +190,7 @@ export default function SummaryView({ events, onViewEvent, selectedDate, setSele
                         {e.staff?.map((s, idx) => (
                           <span key={idx} className="text-[10px] bg-surface2/60 px-2 py-1 rounded-md text-text border border-surface1 shadow-sm font-bold whitespace-nowrap">{s}</span>
                         ))}
-                        {assignedCount === 0 && <span className="text-[10px] text-surface2 italic">{t('noEvents')}</span>}
+                        {assignedCount === 0 && <span className="text-[10px] text-surface2 italic">{t('noneAssigned')}</span>}
                       </div>
                     </div>
                   </div>

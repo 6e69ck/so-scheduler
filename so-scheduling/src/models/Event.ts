@@ -14,13 +14,10 @@ export interface IEvent extends mongoose.Document {
   clientPhone: string;
   clientEmail: string;
   totalPrice: number;
-  paidBalance: number;
-  readonly remainingBalance: number;
   gear: string[];
   staff: string[];
   neededPeople: number;
   eventNumber?: number;
-  tips?: number;
 }
 
 const EventSchema = new mongoose.Schema<IEvent>({
@@ -37,20 +34,14 @@ const EventSchema = new mongoose.Schema<IEvent>({
   clientPhone: { type: String, default: '' },
   clientEmail: { type: String, default: '' },
   totalPrice: { type: Number, default: 0 },
-  paidBalance: { type: Number, default: 0 },
   gear: { type: [String], default: [] },
   staff: { type: [String], default: [] },
   neededPeople: { type: Number, default: 0 },
   eventNumber: { type: Number },
-  tips: { type: Number, default: 0 },
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true },
-});
-
-EventSchema.virtual('remainingBalance').get(function(this: IEvent) {
-  return (this.totalPrice || 0) - (this.paidBalance || 0);
 });
 
 export default mongoose.models.Event || mongoose.model<IEvent>('Event', EventSchema);

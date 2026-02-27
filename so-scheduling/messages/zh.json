@@ -7,6 +7,7 @@
     "day": "日",
     "week": "周",
     "month": "月",
+    "year": "年",
     "time": "时间",
     "startTime": "开始时间",
     "endTime": "结束时间",
@@ -30,8 +31,10 @@
     "calendar": "日历",
     "summary": "摘要",
     "list": "列表",
+    "ledger": "账目",
     "adminSummary": "管理摘要",
     "noEvents": "该时段没有演出。",
+    "noneAssigned": "暂无人员",
     "close": "关闭",
     "editDetails": "编辑详情",
     "genDeposit": "生成定金账单",
@@ -65,6 +68,34 @@
       "Planning": "计划中",
       "Confirmed": "已确认",
       "Completed": "已完成"
-    }
+    },
+    "transactions": "交易记录",
+    "addRevenue": "添加收入",
+    "addReimbursement": "添加报销",
+    "revenue": "收入",
+    "reimbursement": "报销",
+    "cash": "现金",
+    "cheque": "支票",
+    "eTransfer": "电子转账",
+    "credit": "信用卡/手动",
+    "reimbursement": "报销",
+    "type": "类型",
+    "account": "账户",
+    "accounts": {
+      "Bank": "银行/现金账户",
+      "Member Reimbursements": "成员报销",
+      "Fees": "手续费/支出",
+      "Tips": "小费"
+    },
+    "category": "类别",
+    "intents": {
+      "payment": "支付/回款",
+      "tip": "小费",
+      "fee": "手续费/支出",
+      "reimbursement": "成员报销"
+    },
+    "receipt": "收据",
+    "uploadReceipt": "上传收据",
+    "netProfit": "净利润"
   }
 }
