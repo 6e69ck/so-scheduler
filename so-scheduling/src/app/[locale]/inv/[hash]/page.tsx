@@ -7,12 +7,13 @@ import { Loader2, Phone, Mail, Clock, MapPin, Printer } from 'lucide-react';
 import moment from 'moment';
 import ReactMarkdown from 'react-markdown';
 
-function InvTopDetailHeader({ children }: { children: React.ReactNode }) {
+const InvTopDetailHeader = React.memo(({ children }: { children: React.ReactNode }) => {
   // Using pt for physical size consistency
-  return (<h3 className="font-[10pt] font-bold text-gray-400 uppercase mb-4 border-b border-gray-400 pb-1">{children}</h3>)
-}
+  return (<h3 className="text-[10pt] font-bold text-gray-400 uppercase mb-4 border-b border-gray-400 pb-1">{children}</h3>)
+});
+InvTopDetailHeader.displayName = 'InvTopDetailHeader';
 
-function InvTopDetailItem({ label, value, variant = 'bold' }: { label: string, value: string | React.ReactNode, variant?: 'bold' | 'medium' }) {
+const InvTopDetailItem = React.memo(({ label, value, variant = 'bold' }: { label: string, value: string | React.ReactNode, variant?: 'bold' | 'medium' }) => {
   if (!value) return null;
   return (
     <div>
@@ -20,7 +21,8 @@ function InvTopDetailItem({ label, value, variant = 'bold' }: { label: string, v
       <p className={`text-[9pt] ${variant === 'bold' ? 'font-bold text-gray-900' : 'font-medium text-gray-700'}`}>{value}</p>
     </div>
   );
-}
+});
+InvTopDetailItem.displayName = 'InvTopDetailItem';
 
 const formatPhone = (phone: string) => {
   if (!phone) return '';
@@ -106,15 +108,15 @@ export default function InvoicePage() {
               <div className="flex items-center gap-6">
                 <img src="/logo.jpg" alt="Logo" className="w-20 h-20 rounded-xl object-cover" />
                 <div className="flex flex-col">
-                  <h1 style={{ fontSize: '24pt' }} className="font-black tracking-tighter uppercase leading-none">The <span className="text-pink-700">Soaring Eagles</span></h1>
-                  <p style={{ fontSize: '11pt' }} className="text-gray-500 font-black tracking-[0.2em] mt-2 uppercase">Lion & Dragon Dance</p>
+                  <h1 className="text-[18pt] font-black uppercase leading-none">The <span className="text-pink-700">Soaring Eagles</span></h1>
+                  <p className="text-gray-500 font-black tracking-[0.2em] mt-2 uppercase">Lion & Dragon Dance</p>
                 </div>
               </div>
               <div className="text-right flex flex-col">
-                <h2 style={{ fontSize: '24pt' }} className="font-black tracking-tighter uppercase leading-none text-gray-900">
-                  INVOICE #{String(snapshot.eventNumber || 0).padStart(4, '0')}
+                <h2 className="text-[18pt] font-bold tracking-tighter uppercase leading-none text-gray-900">
+                  INVOICE #{String(snapshot.eventNumber || 0).padStart(4, '0')} <span className="font-normal text-gray-400">({invoice.shortHash})</span>
                 </h2>
-                <p style={{ fontSize: '11pt' }} className="text-gray-400 font-black tracking-[0.2em] mt-2 uppercase">
+                <p className="text-gray-400 font-bold mt-2 uppercase">
                   {moment(invoice.createdAt).format('MMMM D, YYYY')}
                 </p>
               </div>

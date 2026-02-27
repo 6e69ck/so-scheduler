@@ -45,6 +45,7 @@ export interface InvoiceLineItem {
 export interface InvoiceType {
   _id?: string;
   hash: string;
+  shortHash: string;
   eventId: string;
   type: 'deposit' | 'remaining' | 'custom';
   snapshot: EventType;

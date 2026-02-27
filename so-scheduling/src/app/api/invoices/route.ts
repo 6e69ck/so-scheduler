@@ -4,6 +4,10 @@ import Invoice from '@/models/Invoice';
 import Event from '@/models/Event';
 import crypto from 'crypto';
 
+function generateShortHash() {
+  return crypto.randomBytes(3).toString('hex').slice(0, 5).toUpperCase();
+}
+
 export async function POST(req: Request) {
   try {
     await dbConnect();
@@ -15,8 +19,23 @@ export async function POST(req: Request) {
 
     const hash = crypto.randomBytes(16).toString('hex');
     
+    // Generate unique shortHash
+    let shortHash = generateShortHash();
+    let isUnique = false;
+    let attempts = 0;
+    while (!isUnique && attempts < 10) {
+      const existing = await Invoice.findOne({ shortHash });
+      if (!existing) {
+        isUnique = true;
+      } else {
+        shortHash = generateShortHash();
+        attempts++;
+      }
+    }
+
     const invoice = await Invoice.create({
       hash,
+      shortHash,
       eventId,
       type,
       snapshot: event.toObject(),
