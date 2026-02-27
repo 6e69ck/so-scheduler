@@ -1,21 +1,37 @@
 'use client';
 
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { InvoiceType } from '@/types';
 import { Loader2, Phone, Mail, Clock, MapPin, Printer } from 'lucide-react';
 import moment from 'moment';
-import { useTranslations } from 'next-intl';
 import ReactMarkdown from 'react-markdown';
 
-function InvHeader({ children }: { children: React.ReactNode }) {
-  return (<h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 border-b-1 border-gray-400 pb-1">{children}</h3>)
+function InvTopDetailHeader({ children }: { children: React.ReactNode }) {
+  // Using pt for physical size consistency
+  return (<h3 className="font-[10pt] font-bold text-gray-400 uppercase mb-4 border-b border-gray-400 pb-1">{children}</h3>)
 }
+
+function InvTopDetailItem({ label, value, variant = 'bold' }: { label: string, value: string | React.ReactNode, variant?: 'bold' | 'medium' }) {
+  if (!value) return null;
+  return (
+    <div>
+      <span className="text-[9pt] font-bold text-gray-400 uppercase">{label}</span>
+      <p className={`text-[9pt] ${variant === 'bold' ? 'font-bold text-gray-900' : 'font-medium text-gray-700'}`}>{value}</p>
+    </div>
+  );
+}
+
+const formatPhone = (phone: string) => {
+  if (!phone) return '';
+  const cleaned = ('' + phone).replace(/\D/g, '');
+  const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
+  if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+  return phone;
+};
 
 export default function InvoicePage() {
   const params = useParams();
-  const t = useTranslations('Common');
   const [invoice, setInvoice] = useState<InvoiceType | null>(null);
   const [terms, setTerms] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -27,9 +43,9 @@ export default function InvoicePage() {
           fetch(`/api/invoices?hash=${params.hash}`),
           fetch('/api/terms')
         ]);
-        if (invRes.ok) setInvoice(await resToJSON(invRes));
+        if (invRes.ok) setInvoice(await invRes.json());
         if (termsRes.ok) {
-          const data = await resToJSON(termsRes);
+          const data = await termsRes.json();
           setTerms(data.content);
         }
       } catch (err) {
@@ -38,8 +54,6 @@ export default function InvoicePage() {
         setLoading(false);
       }
     };
-
-    const resToJSON = (res: Response) => res.json();
     fetchData();
   }, [params.hash]);
 
@@ -79,28 +93,28 @@ export default function InvoicePage() {
         onClick={() => window.print()}
         className="fixed bottom-8 right-8 z-[150] no-print flex items-center gap-3 px-8 py-4 bg-gray-900 text-white rounded-full font-black uppercase text-sm tracking-widest hover:bg-black transition shadow-2xl scale-100 hover:scale-105 active:scale-95 duration-200 border-2 border-white/10"
       >
-        <Printer className="w-5 h-5" /> {t('print')}
+        <Printer className="w-5 h-5" /> Print
       </button>
 
       <div className="max-w-full mx-auto space-y-12 print:space-y-0 flex flex-col items-center pb-24 print:pb-0">
 
         {/* Invoice Page */}
-        <div className="bg-white shadow-2xl w-[8.5in] h-[11in] print:w-full print:h-screen print:shadow-none print:border-none printable-area flex flex-col shrink-0 overflow-hidden relative p-[0.75in] print:p-[0.5in]">
+        <div className="bg-white shadow-2xl w-[8.5in] h-[11in] print:shadow-none print:border-none printable-area flex flex-col shrink-0 overflow-hidden relative p-[0.5in]">
           <div className="flex flex-col h-full">
             {/* Header */}
             <div className="flex justify-between items-center mb-10">
               <div className="flex items-center gap-6">
                 <img src="/logo.jpg" alt="Logo" className="w-20 h-20 rounded-xl object-cover" />
                 <div className="flex flex-col">
-                  <h1 className="text-2xl font-black tracking-tighter uppercase leading-none">The <span className="text-pink-700">Soaring Eagles</span></h1>
-                  <p className="text-[11px] text-gray-500 font-black tracking-[0.2em] mt-2 uppercase">Lion & Dragon Dance</p>
+                  <h1 style={{ fontSize: '24pt' }} className="font-black tracking-tighter uppercase leading-none">The <span className="text-pink-700">Soaring Eagles</span></h1>
+                  <p style={{ fontSize: '11pt' }} className="text-gray-500 font-black tracking-[0.2em] mt-2 uppercase">Lion & Dragon Dance</p>
                 </div>
               </div>
               <div className="text-right flex flex-col">
-                <h2 className="text-2xl font-black tracking-tighter uppercase leading-none text-gray-900">
-                  {t('invoice')} #{String(snapshot.eventNumber || 0).padStart(4, '0')}
+                <h2 style={{ fontSize: '24pt' }} className="font-black tracking-tighter uppercase leading-none text-gray-900">
+                  INVOICE #{String(snapshot.eventNumber || 0).padStart(4, '0')}
                 </h2>
-                <p className="text-[11px] text-gray-400 font-black tracking-[0.2em] mt-2 uppercase">
+                <p style={{ fontSize: '11pt' }} className="text-gray-400 font-black tracking-[0.2em] mt-2 uppercase">
                   {moment(invoice.createdAt).format('MMMM D, YYYY')}
                 </p>
               </div>
@@ -108,51 +122,21 @@ export default function InvoicePage() {
 
             <div className="grid grid-cols-2 gap-16 mb-12">
               <div>
-                <InvHeader>{t('billTo')}</InvHeader>
-                <div className="space-y-3 text-xs">
-                  {snapshot.companyName && (
-                    <div>
-                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Company</span>
-                      <p className="font-bold text-gray-900">{snapshot.companyName}</p>
-                    </div>
-                  )}
-                  <div>
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Client Name</span>
-                    <p className="font-bold text-gray-900">{snapshot.clientName}</p>
-                  </div>
-                  {snapshot.clientPhone && (
-                    <div>
-                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Phone Number</span>
-                      <p className="font-medium text-gray-700">{snapshot.clientPhone}</p>
-                    </div>
-                  )}
-                  {snapshot.clientEmail && (
-                    <div>
-                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Email Address</span>
-                      <p className="font-medium text-gray-700">{snapshot.clientEmail}</p>
-                    </div>
-                  )}
+                <InvTopDetailHeader>Bill To</InvTopDetailHeader>
+                <div className="space-y-3" style={{ fontSize: '10pt' }}>
+                  <InvTopDetailItem label="Company" value={snapshot.companyName} />
+                  <InvTopDetailItem label="Client Name" value={snapshot.clientName} />
+                  <InvTopDetailItem label="Phone Number" value={formatPhone(snapshot.clientPhone)} variant="medium" />
+                  <InvTopDetailItem label="Email Address" value={snapshot.clientEmail} variant="medium" />
                 </div>
               </div>
               <div>
-                <InvHeader>{t('eventDetails')}</InvHeader>
-                <div className="space-y-3 text-xs">
-                  <div>
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Show / Performance</span>
-                    <p className="font-bold text-gray-900">{snapshot.show}</p>
-                  </div>
-                  <div>
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Performance Date</span>
-                    <p className="font-bold text-gray-900">{moment.utc(snapshot.date).format('dddd, MMMM D, YYYY')}</p>
-                  </div>
-                  <div>
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Performance Time</span>
-                    <p className="font-bold text-gray-900">{snapshot.startTime} - {snapshot.endTime}</p>
-                  </div>
-                  <div>
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Location</span>
-                    <p className="font-medium text-gray-700">{snapshot.location}</p>
-                  </div>
+                <InvTopDetailHeader>Event Details</InvTopDetailHeader>
+                <div className="space-y-3" style={{ fontSize: '10pt' }}>
+                  <InvTopDetailItem label="Show / Performance" value={snapshot.show || 'N/A'} />
+                  <InvTopDetailItem label="Performance Date" value={moment.utc(snapshot.date).format('dddd, MMMM D, YYYY')} />
+                  <InvTopDetailItem label="Performance Time" value={`${snapshot.startTime} - ${snapshot.endTime}`} />
+                  <InvTopDetailItem label="Location" value={snapshot.location || 'N/A'} variant="medium" />
                 </div>
               </div>
             </div>
@@ -161,9 +145,9 @@ export default function InvoicePage() {
             <div className="flex-1">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="border-b-1 border-gray-400">
-                    <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('description')}</th>
-                    <th className="py-4 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('amount')}</th>
+                  <tr className="border-b border-gray-400">
+                    <th className="py-4 font-black text-gray-400 uppercase tracking-widest" style={{ fontSize: '10pt' }}>Description</th>
+                    <th className="py-4 text-right font-black text-gray-400 uppercase tracking-widest" style={{ fontSize: '10pt' }}>Amount</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -171,11 +155,11 @@ export default function InvoicePage() {
                     <tr key={i}>
                       <td className="py-4">
                         <div className="flex flex-col">
-                          <span className="font-bold text-gray-900 text-base">{item.desc}</span>
-                          {item.subtext && <span className="text-[11px] text-gray-400 font-medium mt-1 uppercase tracking-wider">{item.subtext}</span>}
+                          <span className="text-[9pt] font-bold text-gray-900" style={{ fontSize: '12pt' }}>{item.desc}</span>
+                          {item.subtext && <span className="text-gray-400 font-medium mt-1 uppercase tracking-wider" style={{ fontSize: '10pt' }}>{item.subtext}</span>}
                         </div>
                       </td>
-                      <td className="py-8 text-right font-black text-gray-900 text-lg">${item.amount.toFixed(2)}</td>
+                      <td className="py-8 text-right font-bold font-[14pt] text-gray-900">${item.amount.toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -184,28 +168,27 @@ export default function InvoicePage() {
 
             {/* Totals */}
             <div className="flex justify-end pt-8">
-              <div className="w-full max-w-[280px] border-t-1 border-gray-400">
+              <div className="w-full max-w-[280px] border-t border-gray-400">
                 <div className="flex justify-between items-center py-2">
-                  <span className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">{t('totalDue')}</span>
-                  <span className="text-2xl font-black text-gray-900">${finalDue.toFixed(2)}</span>
+                  <span className="font-bold font-[12pt] text-gray-400 uppercase tracking-[0.2em]">Total Due</span>
+                  <span className="text-[16pt] font-bold text-gray-900">${finalDue.toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
             {/* Footer */}
             <div className="mt-12 pt-8 border-t border-gray-100 flex flex-col gap-2">
-              <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('contractAgreement')}</h4>
-              <p className="text-[11px] text-gray-500 font-medium leading-relaxed italic">{t('contractText')}</p>
+              <h4 className="font-black text-gray-400 uppercase tracking-widest" style={{ fontSize: '10pt' }}>CONTRACT AGREEMENT</h4>
+              <p className="text-gray-500 font-medium leading-relaxed italic" style={{ fontSize: '10pt' }}>Upon payment of this invoice, the client officially agrees to the full Terms and Conditions listed on the following page.</p>
             </div>
           </div>
         </div>
 
         {/* Terms Page */}
-        <div className="bg-white shadow-2xl w-[8.5in] h-[11in] print:w-full print:h-screen print:shadow-none print:border-none print:break-before-page printable-area flex flex-col shrink-0 overflow-hidden relative p-[0.75in] print:p-[0.5in]">
+        <div className="bg-white shadow-2xl w-[8.5in] h-[11in] print:shadow-none print:border-none print:break-before-page printable-area flex flex-col shrink-0 overflow-hidden relative p-[0.5in]">
           <div className="flex flex-col h-full overflow-hidden">
-            <div className="border-b-1 border-gray-700 pb-4 mb-1 flex justify-between items-end shrink-0">
-              <h2 className="text-3xl font-black uppercase tracking-tighter">{t('termsTitle')}</h2>
-              {/* <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Page 2 / 2</span> */}
+            <div className="border-b border-gray-700 pb-4 mb-1 flex justify-between items-end shrink-0">
+              <h2 className="font-black uppercase tracking-tighter" style={{ fontSize: '24pt' }}>Terms and Conditions</h2>
             </div>
 
             <div className="flex-1 overflow-hidden">
@@ -217,17 +200,16 @@ export default function InvoicePage() {
             <div className="mt-auto pt-8 border-t border-gray-100 flex justify-between items-center shrink-0">
               <div className="flex items-center gap-3">
                 <img src="/logo.jpg" alt="Logo" className="w-10 h-10 rounded-lg opacity-50 grayscale" />
-                <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">The Soaring Eagles</span>
+                <span className="font-black text-gray-300 uppercase tracking-[0.3em]" style={{ fontSize: '10pt' }}>The Soaring Eagles</span>
               </div>
             </div>
           </div>
         </div>
       </div>
-
       <style jsx global>{`
         .terms-markdown-container {
           font-family: var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
-          font-size: 10px;
+          font-size: 8.5pt;
           line-height: 1.4;
           color: #374151;
         }
@@ -239,8 +221,8 @@ export default function InvoicePage() {
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          margin-top: 1.5em;
-          margin-bottom: 0.5em;
+          margin-top: 1em;
+          margin-bottom: 0.1em;
           color: #111827;
         }
         .terms-markdown-container h1 { font-size: 1.25em; }
@@ -287,6 +269,6 @@ export default function InvoicePage() {
           }
         }
       `}</style>
-    </div>
+    </div >
   );
 }
