@@ -63,6 +63,9 @@ export async function GET(req: Request) {
       return NextResponse.json(invoice);
     }
 
+    // List all invoices requires authentication
+    if (!isAuthenticated(req)) return unauthorizedResponse();
+
     const invoices = await Invoice.find({}).sort({ createdAt: -1 });
     return NextResponse.json(invoices);
   } catch (error: any) {

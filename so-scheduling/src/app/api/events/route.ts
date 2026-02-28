@@ -4,7 +4,8 @@ import Event from '@/models/Event';
 import Counter from '@/models/Counter';
 import { isAuthenticated, unauthorizedResponse } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(req: Request) {
+  if (!isAuthenticated(req)) return unauthorizedResponse();
   try {
     await dbConnect();
     const events = await Event.find({}).sort({ date: 1, startTime: 1 });

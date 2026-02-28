@@ -3,6 +3,19 @@ import dbConnect from '@/lib/mongodb';
 import Event from '@/models/Event';
 import { isAuthenticated, unauthorizedResponse } from '@/lib/auth';
 
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!isAuthenticated(req)) return unauthorizedResponse();
+  try {
+    await dbConnect();
+    const id = (await params).id;
+    const event = await Event.findById(id);
+    if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+    return NextResponse.json(event);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!isAuthenticated(req)) return unauthorizedResponse();
 

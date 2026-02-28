@@ -4,6 +4,7 @@ import Transaction from '@/models/Transaction';
 import { isAuthenticated, unauthorizedResponse } from '@/lib/auth';
 
 export async function GET(req: Request) {
+  if (!isAuthenticated(req)) return unauthorizedResponse();
   try {
     await dbConnect();
     const transactions = await Transaction.find({}).sort({ date: -1 });
