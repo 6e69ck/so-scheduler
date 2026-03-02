@@ -120,7 +120,7 @@ export default function InvoicePage() {
                 </div>
                 <div className="text-right flex flex-col">
                   <h2 className="text-[18pt] font-bold tracking-tighter uppercase leading-none text-gray-900">
-                    INVOICE {snapshot.eventNumber > 0 ? `#${String(snapshot.eventNumber).padStart(4, '0')}` : ''} <span className="font-normal text-gray-400">({invoice.shortHash})</span>
+                    INVOICE {(snapshot.eventNumber ?? 0) > 0 ? `#${String(snapshot.eventNumber).padStart(4, '0')}` : ''} <span className="font-normal text-gray-400">({invoice.shortHash})</span>
                   </h2>
                   <p className="text-gray-400 font-bold mt-2 uppercase">
                     {moment(invoice.createdAt).format('MMMM D, YYYY')}
