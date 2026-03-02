@@ -87,6 +87,10 @@ export default function InvoicePage() {
     finalDue = customTotal || lineItems.reduce((acc, curr) => acc + curr.amount, 0);
   }
 
+  // Determine if sections should show
+  const hasBillTo = snapshot.companyName || snapshot.clientName || snapshot.clientPhone || snapshot.clientEmail;
+  const hasEventDetails = snapshot.date || snapshot.startTime || snapshot.location;
+
   return (
     <div className="min-h-screen bg-gray-400 py-12 px-0 sm:px-6 font-sans text-gray-900 print:bg-white print:py-0 print:px-0">
 
@@ -116,7 +120,7 @@ export default function InvoicePage() {
                 </div>
                 <div className="text-right flex flex-col">
                   <h2 className="text-[18pt] font-bold tracking-tighter uppercase leading-none text-gray-900">
-                    INVOICE #{String(snapshot.eventNumber || 0).padStart(4, '0')} <span className="font-normal text-gray-400">({invoice.shortHash})</span>
+                    INVOICE {snapshot.eventNumber > 0 ? `#${String(snapshot.eventNumber).padStart(4, '0')}` : ''} <span className="font-normal text-gray-400">({invoice.shortHash})</span>
                   </h2>
                   <p className="text-gray-400 font-bold mt-2 uppercase">
                     {moment(invoice.createdAt).format('MMMM D, YYYY')}
@@ -124,26 +128,32 @@ export default function InvoicePage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-16 mb-4">
-                <div>
-                  <InvTopDetailHeader>Bill To</InvTopDetailHeader>
-                  <div className="space-y-3" style={{ fontSize: '10pt' }}>
-                    <InvTopDetailItem label="Company" value={snapshot.companyName} />
-                    <InvTopDetailItem label="Client Name" value={snapshot.clientName} />
-                    <InvTopDetailItem label="Phone Number" value={formatPhone(snapshot.clientPhone)} variant="medium" />
-                    <InvTopDetailItem label="Email Address" value={snapshot.clientEmail} variant="medium" />
-                  </div>
+              {(hasBillTo || hasEventDetails) && (
+                <div className={`grid ${hasBillTo && hasEventDetails ? 'grid-cols-2 gap-16' : 'grid-cols-1'} mb-4`}>
+                  {hasBillTo && (
+                    <div>
+                      <InvTopDetailHeader>Bill To</InvTopDetailHeader>
+                      <div className="space-y-3" style={{ fontSize: '10pt' }}>
+                        <InvTopDetailItem label="Company" value={snapshot.companyName} />
+                        <InvTopDetailItem label="Client Name" value={snapshot.clientName} />
+                        <InvTopDetailItem label="Phone Number" value={formatPhone(snapshot.clientPhone)} variant="medium" />
+                        <InvTopDetailItem label="Email Address" value={snapshot.clientEmail} variant="medium" />
+                      </div>
+                    </div>
+                  )}
+                  {hasEventDetails && (
+                    <div>
+                      <InvTopDetailHeader>Event Details</InvTopDetailHeader>
+                      <div className="space-y-3" style={{ fontSize: '10pt' }}>
+                        <InvTopDetailItem label="Show / Performance" value={snapshot.show || 'N/A'} />
+                        <InvTopDetailItem label="Performance Date" value={snapshot.date ? moment.utc(snapshot.date).format('dddd, MMMM D, YYYY') : null} />
+                        <InvTopDetailItem label="Performance Time" value={snapshot.startTime ? `${snapshot.startTime} - ${snapshot.endTime}` : null} />
+                        <InvTopDetailItem label="Location" value={snapshot.location || 'N/A'} variant="medium" />
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <InvTopDetailHeader>Event Details</InvTopDetailHeader>
-                  <div className="space-y-3" style={{ fontSize: '10pt' }}>
-                    <InvTopDetailItem label="Show / Performance" value={snapshot.show || 'N/A'} />
-                    <InvTopDetailItem label="Performance Date" value={moment.utc(snapshot.date).format('dddd, MMMM D, YYYY')} />
-                    <InvTopDetailItem label="Performance Time" value={`${snapshot.startTime} - ${snapshot.endTime}`} />
-                    <InvTopDetailItem label="Location" value={snapshot.location || 'N/A'} variant="medium" />
-                  </div>
-                </div>
-              </div>
+              )}
 
               {/* Items Table */}
               <div className="flex-1">

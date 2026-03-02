@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const InvoiceSchema = new mongoose.Schema({
   hash: { type: String, required: true, unique: true },
   shortHash: { type: String, required: true, unique: true },
-  eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', required: true },
+  eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', required: false },
   type: { type: String, enum: ['deposit', 'remaining', 'custom'], required: true },
   snapshot: { type: Object, required: true },
   customLineItems: [{

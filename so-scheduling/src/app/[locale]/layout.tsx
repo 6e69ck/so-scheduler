@@ -39,9 +39,7 @@ export default async function LocaleLayout({
     <html lang={locale} className="dark">
       <body className={`${roboto.variable} font-sans antialiased bg-base text-text min-h-screen`}>
         <NextIntlClientProvider messages={messages}>
-          <AuthWrapper>
-            {children}
-          </AuthWrapper>
+          {children}
         </NextIntlClientProvider>
       </body>
     </html>

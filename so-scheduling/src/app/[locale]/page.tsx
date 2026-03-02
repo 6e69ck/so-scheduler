@@ -5,11 +5,13 @@ import LedgerView from '@/components/LedgerView';
 import SummaryView from '@/components/SummaryView';
 import EventModal from '@/components/EventModal';
 import ViewEventModal from '@/components/ViewEventModal';
+import AdHocInvoiceModal from '@/components/AdHocInvoiceModal';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { EventType, TransactionType } from '@/types';
 import { Calendar, LayoutGrid, FileText, Loader2 } from 'lucide-react';
 import moment from 'moment';
 import { useTranslations } from 'next-intl';
+import AuthWrapper from '@/components/AuthWrapper';
 
 export default function Home() {
   const t = useTranslations('Common');
@@ -18,6 +20,7 @@ export default function Home() {
   const [transactions, setTransactions] = useState<TransactionType[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAdHocModalOpen, setIsAdHocModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EventType | null>(null);
   const [viewingEvent, setViewingEvent] = useState<EventType | null>(null);
   const [initialRange, setInitialRange] = useState<{ start: Date, end: Date } | undefined>();
@@ -112,6 +115,33 @@ export default function Home() {
     }
   };
 
+  const handleGenerateAdHoc = async (details: any, items: any[]) => {
+    try {
+      const auth = localStorage.getItem('soaring_admin_session') || '';
+      const res = await fetch('/api/invoices', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': auth
+        },
+        body: JSON.stringify({ 
+          details, 
+          customLineItems: items,
+          type: 'custom'
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Construct the hash-based public link
+        const url = `/${window.location.pathname.split('/')[1]}/inv/${data.hash}`;
+        window.open(url, '_blank');
+        setIsAdHocModalOpen(false);
+      }
+    } catch (err) {
+      console.error('Failed to generate ad-hoc invoice', err);
+    }
+  };
+
   if (loading) {
     return (
       <div className="h-screen bg-base flex items-center justify-center text-text">
@@ -121,100 +151,110 @@ export default function Home() {
   }
 
   return (
-    <div className="h-screen bg-base flex flex-col text-text font-sans overflow-hidden">
-      {/* Header */}
-      <div className="bg-mantle border-b border-surface0 px-4 py-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0 shadow-lg relative z-30">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center shadow-lg shadow-accent/20">
-            <Calendar className="w-6 h-6 text-crust" />
+    <AuthWrapper>
+      <div className="h-screen bg-base flex flex-col text-text font-sans overflow-hidden">
+        {/* Header */}
+        <div className="bg-mantle border-b border-surface0 px-4 py-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0 shadow-lg relative z-30">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center shadow-lg shadow-accent/20">
+              <Calendar className="w-6 h-6 text-crust" />
+            </div>
+            <div>
+              <h1 className="text-xl font-black tracking-tighter text-text uppercase leading-none">Soaring<span className="text-accent">Eagles</span></h1>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-subtext0 font-bold mt-1">Admin Terminal</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-black tracking-tighter text-text uppercase leading-none">Soaring<span className="text-accent">Eagles</span></h1>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-subtext0 font-bold mt-1">Admin Terminal</p>
+
+          <div className="flex items-center gap-4">
+            <LanguageSwitcher />
+            
+            <div className="flex bg-crust rounded-xl p-1 border border-surface0 shadow-inner">
+              <button
+                onClick={() => setView('calendar')}
+                className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'calendar' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                {t('calendar')}
+              </button>
+              <button
+                onClick={() => setView('summary')}
+                className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'summary' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                {t('summary')}
+              </button>
+              <button
+                onClick={() => setView('spreadsheet')}
+                className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'spreadsheet' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
+              >
+                <LayoutGrid className="w-4 h-4 mr-2" />
+                {t('list')}
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <LanguageSwitcher />
-          
-          <div className="flex bg-crust rounded-xl p-1 border border-surface0 shadow-inner">
-            <button
-              onClick={() => setView('calendar')}
-              className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'calendar' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
-            >
-              <Calendar className="w-4 h-4 mr-2" />
-              {t('calendar')}
-            </button>
-            <button
-              onClick={() => setView('summary')}
-              className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'summary' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              {t('summary')}
-            </button>
-            <button
-              onClick={() => setView('spreadsheet')}
-              className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'spreadsheet' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
-            >
-              <LayoutGrid className="w-4 h-4 mr-2" />
-              {t('list')}
-            </button>
+        {/* Main Content */}
+        <div className="flex-1 p-0 sm:p-4 md:p-6 overflow-hidden flex flex-col min-h-0 bg-base relative z-10">
+          <div className="flex-1 bg-mantle sm:rounded-2xl border-none sm:border border-surface0 shadow-2xl overflow-hidden relative">
+            {view === 'calendar' ? (
+              <CalendarView 
+                events={events} 
+                onEditEvent={(e) => { setEditingEvent(e); setIsModalOpen(true); }}
+                onViewEvent={handleViewEvent}
+                onCreateEvent={(start, end) => {
+                  setInitialRange(start && end ? { start, end } : undefined);
+                  setEditingEvent(null);
+                  setIsModalOpen(true);
+                }}
+              />
+            ) : view === 'summary' ? (
+              <SummaryView 
+                events={events} 
+                transactions={transactions}
+                onViewEvent={setViewingEvent}
+                selectedDate={selectedDate}
+                setSelectedDate={setSelectedDate}
+              />
+            ) : (
+              <LedgerView 
+                events={events} 
+                onEditEvent={(e) => { setEditingEvent(e); setIsModalOpen(true); }} 
+                onViewEvent={handleViewEvent}
+                onSaveEvent={handleSaveEvent}
+                onTriggerAdHoc={() => setIsAdHocModalOpen(true)}
+              />
+            )}
           </div>
         </div>
+
+        {viewingEvent && (
+          <ViewEventModal 
+            event={viewingEvent} 
+            transactions={transactions}
+            onClose={() => setViewingEvent(null)} 
+            onEdit={(e) => { setViewingEvent(null); setEditingEvent(e); setIsModalOpen(true); }} 
+            onRefresh={() => fetchData()}
+          />
+        )}
+
+        {isModalOpen && (
+          <EventModal
+            event={editingEvent}
+            initialRange={initialRange}
+            onClose={() => { setIsModalOpen(false); setEditingEvent(null); }}
+            onSave={handleSaveEvent}
+            onDelete={handleDeleteEvent}
+          />
+        )}
+
+        {isAdHocModalOpen && (
+          <AdHocInvoiceModal 
+            onClose={() => setIsAdHocModalOpen(false)}
+            onGenerate={handleGenerateAdHoc}
+          />
+        )}
       </div>
-
-      {/* Main Content */}
-      <div className="flex-1 p-0 sm:p-4 md:p-6 overflow-hidden flex flex-col min-h-0 bg-base relative z-10">
-        <div className="flex-1 bg-mantle sm:rounded-2xl border-none sm:border border-surface0 shadow-2xl overflow-hidden relative">
-          {view === 'calendar' ? (
-            <CalendarView 
-              events={events} 
-              onEditEvent={(e) => { setEditingEvent(e); setIsModalOpen(true); }}
-              onViewEvent={handleViewEvent}
-              onCreateEvent={(start, end) => {
-                setInitialRange(start && end ? { start, end } : undefined);
-                setEditingEvent(null);
-                setIsModalOpen(true);
-              }}
-            />
-          ) : view === 'summary' ? (
-            <SummaryView 
-              events={events} 
-              transactions={transactions}
-              onViewEvent={setViewingEvent}
-              selectedDate={selectedDate}
-              setSelectedDate={setSelectedDate}
-            />
-          ) : (
-            <LedgerView 
-              events={events} 
-              onEditEvent={(e) => { setEditingEvent(e); setIsModalOpen(true); }} 
-              onViewEvent={handleViewEvent}
-              onSaveEvent={handleSaveEvent}
-            />
-          )}
-        </div>
-      </div>
-
-      {viewingEvent && (
-        <ViewEventModal 
-          event={viewingEvent} 
-          transactions={transactions}
-          onClose={() => setViewingEvent(null)} 
-          onEdit={(e) => { setViewingEvent(null); setEditingEvent(e); setIsModalOpen(true); }} 
-          onRefresh={() => fetchData()}
-        />
-      )}
-
-      {isModalOpen && (
-        <EventModal
-          event={editingEvent}
-          initialRange={initialRange}
-          onClose={() => { setIsModalOpen(false); setEditingEvent(null); }}
-          onSave={handleSaveEvent}
-          onDelete={handleDeleteEvent}
-        />
-      )}
-    </div>
+    </AuthWrapper>
   );
 }

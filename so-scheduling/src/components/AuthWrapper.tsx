@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Lock, Loader2 } from 'lucide-react';
-import { usePathname } from 'next/navigation';
 
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -10,17 +9,35 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const pathname = usePathname();
 
   useEffect(() => {
-    // Check localStorage for a persistent session
-    const auth = localStorage.getItem('soaring_admin_session');
-    // For this simple case, we just check if it exists. 
-    // You could also store a timestamp and check if it's too old.
-    if (auth === 'authenticated_session_v1') {
-      setIsAuthenticated(true);
-    }
-    setLoading(false);
+    const verifyToken = async () => {
+      const auth = localStorage.getItem('soaring_admin_session');
+      if (!auth) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/verify', {
+          headers: { 'Authorization': auth }
+        });
+        
+        if (res.ok) {
+          setIsAuthenticated(true);
+        } else {
+          // Token invalid, clear it
+          localStorage.removeItem('soaring_admin_session');
+          setIsAuthenticated(false);
+        }
+      } catch (err) {
+        console.error('Auth verification failed', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verifyToken();
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -60,9 +77,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
     );
   }
 
-  const isPublicRoute = pathname.includes('/inv/');
-
-  if (!isAuthenticated && !isPublicRoute) {
+  if (!isAuthenticated) {
     return (
       <div className="h-screen bg-crust flex items-center justify-center p-4 font-sans">
         <div className="bg-mantle border border-surface0 p-8 rounded-2xl shadow-2xl w-full max-w-md text-center">

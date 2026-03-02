@@ -5,7 +5,7 @@ import Counter from '@/models/Counter';
 import { isAuthenticated, unauthorizedResponse } from '@/lib/auth';
 
 export async function GET(req: Request) {
-  if (!isAuthenticated(req)) return unauthorizedResponse();
+  if (!(await isAuthenticated(req))) return unauthorizedResponse();
   try {
     await dbConnect();
     const events = await Event.find({}).sort({ date: 1, startTime: 1 });
@@ -16,7 +16,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  if (!isAuthenticated(req)) return unauthorizedResponse();
+  if (!(await isAuthenticated(req))) return unauthorizedResponse();
 
   try {
     await dbConnect();

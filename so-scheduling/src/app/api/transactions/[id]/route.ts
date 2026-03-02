@@ -4,7 +4,7 @@ import Transaction from '@/models/Transaction';
 import { isAuthenticated, unauthorizedResponse } from '@/lib/auth';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!isAuthenticated(req)) return unauthorizedResponse();
+  if (!(await isAuthenticated(req))) return unauthorizedResponse();
   try {
     await dbConnect();
     const { id } = await params;
@@ -17,7 +17,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!isAuthenticated(req)) return unauthorizedResponse();
+  if (!(await isAuthenticated(req))) return unauthorizedResponse();
 
   try {
     await dbConnect();
@@ -34,7 +34,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!isAuthenticated(req)) return unauthorizedResponse();
+  if (!(await isAuthenticated(req))) return unauthorizedResponse();
 
   try {
     await dbConnect();

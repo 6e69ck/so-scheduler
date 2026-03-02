@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createToken } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
@@ -6,9 +7,8 @@ export async function POST(req: Request) {
     const correctPassword = process.env.ADMIN_PASSWORD || 'Eagle123!';
 
     if (password === correctPassword) {
-      // In a real app, you'd return a JWT or session token.
-      // For this simple case, we just return success.
-      return NextResponse.json({ success: true, token: 'authenticated_session_v1' });
+      const token = await createToken({ role: 'admin' });
+      return NextResponse.json({ success: true, token });
     } else {
       return NextResponse.json({ success: false, error: 'Invalid password' }, { status: 401 });
     }

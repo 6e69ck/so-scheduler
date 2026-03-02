@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { EventType, TransactionType, TransactionAccount, TransactionIntent } from '@/types';
-import { Edit2, Plus, Receipt, Wallet, DollarSign, ChevronDown, ChevronRight, ChevronUp, Image as ImageIcon, Trash2, Calendar as CalendarIcon, Briefcase, ArrowLeftRight, Check, X, MoreVertical, Loader2 } from 'lucide-react';
+import { Edit2, Plus, Receipt, Wallet, DollarSign, ChevronDown, ChevronRight, ChevronUp, Image as ImageIcon, Trash2, Calendar as CalendarIcon, Briefcase, ArrowLeftRight, Check, X, MoreVertical, Loader2, FileText } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import moment from 'moment';
 
@@ -11,9 +11,10 @@ interface Props {
   onEditEvent: (e: EventType) => void;
   onViewEvent?: (e: EventType) => void;
   onSaveEvent: (e: EventType) => Promise<void>;
+  onTriggerAdHoc: () => void;
 }
 
-export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEvent }: Props) {
+export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEvent, onTriggerAdHoc }: Props) {
   const t = useTranslations('Common');
   const [standaloneTransactions, setTransactions] = useState<TransactionType[]>([]);
   const [isAddingStandalone, setIsAddingStandalone] = useState<boolean>(false);
@@ -239,12 +240,20 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
           <Wallet className="w-4 h-4 text-accent" />
           <h2 className="font-bold text-sm uppercase tracking-widest">{t('ledger')}</h2>
         </div>
-        <button
-          onClick={() => { resetForm(); setIsAddingStandalone(true); setIntent('reimbursement'); setDate(moment().format('YYYY-MM-DD')); }}
-          className="flex items-center gap-2 px-3 py-1.5 bg-accent text-crust rounded-lg text-[10px] font-black hover:bg-accent-hover transition uppercase tracking-widest"
-        >
-          <Plus className="w-3 h-3" /> Entry
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onTriggerAdHoc}
+            className="flex items-center gap-2 px-3 py-1.5 bg-surface0 text-text border border-surface1 rounded-lg text-[10px] font-black hover:bg-surface1 transition uppercase tracking-widest"
+          >
+            <FileText className="w-3 h-3" /> Custom Invoice
+          </button>
+          <button
+            onClick={() => { resetForm(); setIsAddingStandalone(true); setIntent('reimbursement'); setDate(moment().format('YYYY-MM-DD')); }}
+            className="flex items-center gap-2 px-3 py-1.5 bg-accent text-crust rounded-lg text-[10px] font-black hover:bg-accent-hover transition uppercase tracking-widest"
+          >
+            <Plus className="w-3 h-3" /> Entry
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar overflow-x-hidden">

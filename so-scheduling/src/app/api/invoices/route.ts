@@ -10,15 +10,28 @@ function generateShortHash() {
 }
 
 export async function POST(req: Request) {
-  if (!isAuthenticated(req)) return unauthorizedResponse();
+  if (!(await isAuthenticated(req))) return unauthorizedResponse();
 
   try {
     await dbConnect();
     const body = await req.json();
-    const { eventId, type, customLineItems, customTotal } = body;
+    const { eventId, type, customLineItems, customTotal, details } = body;
 
-    const event = await Event.findById(eventId);
-    if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+    let snapshot = {};
+    
+    if (eventId) {
+      const event = await Event.findById(eventId);
+      if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+      snapshot = event.toObject();
+    } else if (details) {
+      // Ad-hoc invoice without an event
+      snapshot = {
+        ...details,
+        eventNumber: 0, // Mark as ad-hoc
+      };
+    } else {
+      return NextResponse.json({ error: 'Missing eventId or details' }, { status: 400 });
+    }
 
     const hash = crypto.randomBytes(16).toString('hex');
     
@@ -39,9 +52,9 @@ export async function POST(req: Request) {
     const invoice = await Invoice.create({
       hash,
       shortHash,
-      eventId,
-      type,
-      snapshot: event.toObject(),
+      eventId: eventId || null,
+      type: type || 'custom',
+      snapshot,
       customLineItems,
       customTotal
     });
@@ -64,7 +77,7 @@ export async function GET(req: Request) {
     }
 
     // List all invoices requires authentication
-    if (!isAuthenticated(req)) return unauthorizedResponse();
+    if (!(await isAuthenticated(req))) return unauthorizedResponse();
 
     const invoices = await Invoice.find({}).sort({ createdAt: -1 });
     return NextResponse.json(invoices);
