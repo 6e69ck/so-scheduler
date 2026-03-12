@@ -13,7 +13,7 @@ import moment from 'moment';
 import { useTranslations } from 'next-intl';
 import AuthWrapper from '@/components/AuthWrapper';
 
-export default function Home() {
+function AdminDashboard() {
   const t = useTranslations('Common');
   const [view, setView] = useState<'calendar' | 'spreadsheet' | 'summary'>('calendar');
   const [events, setEvents] = useState<EventType[]>([]);
@@ -30,15 +30,34 @@ export default function Home() {
 
   const fetchData = async () => {
     try {
-      const auth = localStorage.getItem('soaring_admin_session') || '';
+      const auth = localStorage.getItem('soaring_admin_session');
+      if (!auth) {
+        setLoading(false);
+        return;
+      }
+
       const [eRes, tRes] = await Promise.all([
         fetch('/api/events', { headers: { 'Authorization': auth } }),
         fetch('/api/transactions', { headers: { 'Authorization': auth } })
       ]);
-      if (eRes.ok) setEvents(await eRes.json());
-      if (tRes.ok) setTransactions(await tRes.json());
+      
+      if (!eRes.ok || !tRes.ok) {
+        if (eRes.status === 401 || tRes.status === 401) {
+          localStorage.removeItem('soaring_admin_session');
+          window.location.reload();
+          return;
+        }
+        const eData = !eRes.ok ? await eRes.json().catch(() => ({})) : {};
+        const tData = !tRes.ok ? await tRes.json().catch(() => ({})) : {};
+        alert(`Failed to fetch data: ${eData.error || tData.error || 'Unknown error'}`);
+        return;
+      }
+
+      setEvents(await eRes.json());
+      setTransactions(await tRes.json());
     } catch (err) {
       console.error('Failed to fetch data', err);
+      alert('Network error while fetching data. Please check your connection.');
     } finally {
       setLoading(false);
     }
@@ -151,110 +170,116 @@ export default function Home() {
   }
 
   return (
-    <AuthWrapper>
-      <div className="h-screen bg-base flex flex-col text-text font-sans overflow-hidden">
-        {/* Header */}
-        <div className="bg-mantle border-b border-surface0 px-4 py-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0 shadow-lg relative z-30">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center shadow-lg shadow-accent/20">
-              <Calendar className="w-6 h-6 text-crust" />
-            </div>
-            <div>
-              <h1 className="text-xl font-black tracking-tighter text-text uppercase leading-none">Soaring<span className="text-accent">Eagles</span></h1>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-subtext0 font-bold mt-1">Admin Terminal</p>
-            </div>
+    <div className="h-screen bg-base flex flex-col text-text font-sans overflow-hidden">
+      {/* Header */}
+      <div className="bg-mantle border-b border-surface0 px-4 py-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0 shadow-lg relative z-30">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center shadow-lg shadow-accent/20">
+            <Calendar className="w-6 h-6 text-crust" />
           </div>
-
-          <div className="flex items-center gap-4">
-            <LanguageSwitcher />
-            
-            <div className="flex bg-crust rounded-xl p-1 border border-surface0 shadow-inner">
-              <button
-                onClick={() => setView('calendar')}
-                className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'calendar' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
-              >
-                <Calendar className="w-4 h-4 mr-2" />
-                {t('calendar')}
-              </button>
-              <button
-                onClick={() => setView('summary')}
-                className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'summary' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                {t('summary')}
-              </button>
-              <button
-                onClick={() => setView('spreadsheet')}
-                className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'spreadsheet' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
-              >
-                <LayoutGrid className="w-4 h-4 mr-2" />
-                {t('list')}
-              </button>
-            </div>
+          <div>
+            <h1 className="text-xl font-black tracking-tighter text-text uppercase leading-none">Soaring<span className="text-accent">Eagles</span></h1>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-subtext0 font-bold mt-1">Admin Terminal</p>
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 p-0 sm:p-4 md:p-6 overflow-hidden flex flex-col min-h-0 bg-base relative z-10">
-          <div className="flex-1 bg-mantle sm:rounded-2xl border-none sm:border border-surface0 shadow-2xl overflow-hidden relative">
-            {view === 'calendar' ? (
-              <CalendarView 
-                events={events} 
-                onEditEvent={(e) => { setEditingEvent(e); setIsModalOpen(true); }}
-                onViewEvent={handleViewEvent}
-                onCreateEvent={(start, end) => {
-                  setInitialRange(start && end ? { start, end } : undefined);
-                  setEditingEvent(null);
-                  setIsModalOpen(true);
-                }}
-              />
-            ) : view === 'summary' ? (
-              <SummaryView 
-                events={events} 
-                transactions={transactions}
-                onViewEvent={setViewingEvent}
-                selectedDate={selectedDate}
-                setSelectedDate={setSelectedDate}
-              />
-            ) : (
-              <LedgerView 
-                events={events} 
-                onEditEvent={(e) => { setEditingEvent(e); setIsModalOpen(true); }} 
-                onViewEvent={handleViewEvent}
-                onSaveEvent={handleSaveEvent}
-                onTriggerAdHoc={() => setIsAdHocModalOpen(true)}
-              />
-            )}
+        <div className="flex items-center gap-4">
+          <LanguageSwitcher />
+          
+          <div className="flex bg-crust rounded-xl p-1 border border-surface0 shadow-inner">
+            <button
+              onClick={() => setView('calendar')}
+              className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'calendar' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              {t('calendar')}
+            </button>
+            <button
+              onClick={() => setView('summary')}
+              className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'summary' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              {t('summary')}
+            </button>
+            <button
+              onClick={() => setView('spreadsheet')}
+              className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'spreadsheet' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
+            >
+              <LayoutGrid className="w-4 h-4 mr-2" />
+              {t('list')}
+            </button>
           </div>
         </div>
-
-        {viewingEvent && (
-          <ViewEventModal 
-            event={viewingEvent} 
-            transactions={transactions}
-            onClose={() => setViewingEvent(null)} 
-            onEdit={(e) => { setViewingEvent(null); setEditingEvent(e); setIsModalOpen(true); }} 
-            onRefresh={() => fetchData()}
-          />
-        )}
-
-        {isModalOpen && (
-          <EventModal
-            event={editingEvent}
-            initialRange={initialRange}
-            onClose={() => { setIsModalOpen(false); setEditingEvent(null); }}
-            onSave={handleSaveEvent}
-            onDelete={handleDeleteEvent}
-          />
-        )}
-
-        {isAdHocModalOpen && (
-          <AdHocInvoiceModal 
-            onClose={() => setIsAdHocModalOpen(false)}
-            onGenerate={handleGenerateAdHoc}
-          />
-        )}
       </div>
+
+      {/* Main Content */}
+      <div className="flex-1 p-0 sm:p-4 md:p-6 overflow-hidden flex flex-col min-h-0 bg-base relative z-10">
+        <div className="flex-1 bg-mantle sm:rounded-2xl border-none sm:border border-surface0 shadow-2xl overflow-hidden relative">
+          {view === 'calendar' ? (
+            <CalendarView 
+              events={events} 
+              onEditEvent={(e) => { setEditingEvent(e); setIsModalOpen(true); }}
+              onViewEvent={handleViewEvent}
+              onCreateEvent={(start, end) => {
+                setInitialRange(start && end ? { start, end } : undefined);
+                setEditingEvent(null);
+                setIsModalOpen(true);
+              }}
+            />
+          ) : view === 'summary' ? (
+            <SummaryView 
+              events={events} 
+              transactions={transactions}
+              onViewEvent={setViewingEvent}
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
+            />
+          ) : (
+            <LedgerView 
+              events={events} 
+              onEditEvent={(e) => { setEditingEvent(e); setIsModalOpen(true); }} 
+              onViewEvent={handleViewEvent}
+              onSaveEvent={handleSaveEvent}
+              onTriggerAdHoc={() => setIsAdHocModalOpen(true)}
+            />
+          )}
+        </div>
+      </div>
+
+      {viewingEvent && (
+        <ViewEventModal 
+          event={viewingEvent} 
+          transactions={transactions}
+          onClose={() => setViewingEvent(null)} 
+          onEdit={(e) => { setViewingEvent(null); setEditingEvent(e); setIsModalOpen(true); }} 
+          onRefresh={() => fetchData()}
+        />
+      )}
+
+      {isModalOpen && (
+        <EventModal
+          event={editingEvent}
+          initialRange={initialRange}
+          onClose={() => { setIsModalOpen(false); setEditingEvent(null); }}
+          onSave={handleSaveEvent}
+          onDelete={handleDeleteEvent}
+        />
+      )}
+
+      {isAdHocModalOpen && (
+        <AdHocInvoiceModal 
+          onClose={() => setIsAdHocModalOpen(false)}
+          onGenerate={handleGenerateAdHoc}
+        />
+      )}
+    </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <AuthWrapper>
+      <AdminDashboard />
     </AuthWrapper>
   );
 }

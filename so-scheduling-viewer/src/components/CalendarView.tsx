@@ -29,7 +29,7 @@ export default function CalendarView({ events, onEventClick }: Props) {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-  
+
   const rbcEvents = events.map(e => {
     const d = new Date(e.date);
     const year = d.getUTCFullYear();
@@ -37,7 +37,7 @@ export default function CalendarView({ events, onEventClick }: Props) {
     const day = d.getUTCDate();
     const [startH, startM] = e.startTime.split(':').map(Number);
     const [endH, endM] = e.endTime.split(':').map(Number);
-    
+
     return {
       id: e._id,
       title: e.show,
@@ -67,16 +67,16 @@ export default function CalendarView({ events, onEventClick }: Props) {
     const e = event.resource as EventType;
     const assigned = e.staff?.length || 0;
     const needed = e.neededPeople || 0;
-    
+
     let backgroundColor = '#313244';
-    
+
     if (needed > 0) {
       if (assigned >= needed) {
-        backgroundColor = 'rgba(166, 227, 161, 0.15)'; 
+        backgroundColor = 'rgba(166, 227, 161, 0.15)';
       } else if (assigned >= needed / 2) {
-        backgroundColor = 'rgba(249, 226, 175, 0.15)'; 
+        backgroundColor = 'rgba(249, 226, 175, 0.15)';
       } else {
-        backgroundColor = 'rgba(243, 139, 168, 0.15)'; 
+        backgroundColor = 'rgba(243, 139, 168, 0.15)';
       }
     }
 
@@ -93,28 +93,28 @@ export default function CalendarView({ events, onEventClick }: Props) {
 
   return (
     <div className="flex flex-col h-full relative w-full text-text" onClick={(e) => e.stopPropagation()}>
-      <div className="flex flex-nowrap gap-2 justify-between items-center mb-4 bg-[#11111b] p-3 rounded-lg shadow-sm border border-[#313244] shrink-0 overflow-x-auto no-scrollbar">
+      <div className="flex flex-nowrap gap-2 justify-between items-center mb-4 bg-mantle p-3 rounded-lg shadow-sm border border-[#313244] shrink-0 overflow-x-auto no-scrollbar">
         <h2 className="text-xl font-bold text-[#cba6f7] shrink-0 hidden sm:block">{t('calendar')}</h2>
 
         <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
           <div className="flex bg-[#181825] rounded-md p-1 border border-[#313244]">
-            <button onClick={prevDate} className="p-1 rounded text-[#a6adc8] hover:text-[#cdd6f4] hover:bg-[#313244] transition"><ChevronLeft className="w-5 h-5"/></button>
-            <button onClick={nextDate} className="p-1 rounded text-[#a6adc8] hover:text-[#cdd6f4] hover:bg-[#313244] transition"><ChevronRight className="w-5 h-5"/></button>
+            <button onClick={prevDate} className="p-1 rounded text-[#a6adc8] hover:text-[#cdd6f4] hover:bg-[#313244] transition"><ChevronLeft className="w-5 h-5" /></button>
+            <button onClick={nextDate} className="p-1 rounded text-[#a6adc8] hover:text-[#cdd6f4] hover:bg-[#313244] transition"><ChevronRight className="w-5 h-5" /></button>
           </div>
-          
+
           <div className="text-[#cdd6f4] font-bold text-[10px] sm:text-sm min-w-[80px] sm:min-w-[150px] text-center">
-            {viewType === Views.MONTH 
-              ? moment(currentDate).format('MMM YYYY') 
-              : viewType === Views.WEEK && isMobile 
+            {viewType === Views.MONTH
+              ? moment(currentDate).format('MMM YYYY')
+              : viewType === Views.WEEK && isMobile
                 ? `${moment(currentDate).format('MMM D')} - ${moment(currentDate).add(2, 'days').format('D')}`
                 : moment(currentDate).format(isMobile ? 'MMM D, YYYY' : 'dddd, MMM D, YYYY')}
           </div>
 
           <div className="flex bg-[#181825] rounded-md p-1 border border-[#313244]">
             {[Views.DAY, Views.WEEK, Views.MONTH].map(v => (
-              <button 
+              <button
                 key={v}
-                onClick={() => setViewType(v as View)} 
+                onClick={() => setViewType(v as View)}
                 className={`px-3 py-2 rounded text-[10px] sm:text-sm font-bold transition-colors ${viewType === v ? 'bg-[#313244] text-[#cba6f7] shadow-sm' : 'text-[#a6adc8] hover:text-[#cdd6f4] hover:bg-[#313244]/50'}`}
               >
                 <span className="hidden sm:inline">{v === 'day' ? t('day') : v === 'week' ? t('week') : t('month')}</span>
@@ -168,7 +168,7 @@ export default function CalendarView({ events, onEventClick }: Props) {
           }}
         />
       </div>
-      
+
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

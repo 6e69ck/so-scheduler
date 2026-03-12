@@ -25,6 +25,8 @@
     "email": "Email",
     "loading": "Loading Schedule...",
     "confirmRemove": "Are you sure you want to remove {name} from this show?",
+    "copyLink": "Copy Link",
+    "linkCopied": "Copied!",
     "statuses": {
       "None": "None",
       "Planning": "Planning",

@@ -25,6 +25,8 @@
     "email": "邮箱",
     "loading": "正在加载日程...",
     "confirmRemove": "您确定要将 {name} 从此演出中移除吗？",
+    "copyLink": "复制链接",
+    "linkCopied": "已复制!",
     "statuses": {
       "None": "无",
       "Planning": "计划中",

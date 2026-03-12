@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import CalendarView from '@/components/CalendarView';
 import SummaryView from '@/components/SummaryView';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -9,13 +11,18 @@ import { Calendar, FileText, Loader2, Eye, EyeOff } from 'lucide-react';
 import moment from 'moment';
 import { useTranslations } from 'next-intl';
 
-export default function Home() {
+function HomeContent() {
   const t = useTranslations('Common');
-  const [view, setView] = useState<'calendar' | 'summary'>('summary');
+  const searchParams = useSearchParams();
+  
+  const initialDate = searchParams.get('date') || moment.utc().format('YYYY-MM-DD');
+  const initialEventId = searchParams.get('event');
+
+  const [view, setView] = useState<'calendar' | 'summary'>(initialEventId ? 'summary' : 'calendar');
   const [events, setEvents] = useState<EventType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<string>(moment.utc().format('YYYY-MM-DD'));
-  const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(initialDate);
+  const [highlightedEventId, setHighlightedEventId] = useState<string | null>(initialEventId);
   const [showPending, setShowPending] = useState(false);
 
   const fetchEvents = async () => {
@@ -178,5 +185,17 @@ export default function Home() {
         <div>v1.2.1</div>
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen bg-[#11111b] flex items-center justify-center text-[#cdd6f4]">
+        <Loader2 className="w-12 h-12 text-[#cba6f7] animate-spin" />
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }

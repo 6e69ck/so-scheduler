@@ -18,14 +18,14 @@ interface Props {
 
 export default function SummaryView({ events, transactions, onViewEvent, selectedDate, setSelectedDate }: Props) {
   const t = useTranslations('Common');
-  const [viewType, setViewType] = useState<ViewType>('day');
+  const [viewType, setViewType] = useState<ViewType>('month');
 
   const filteredEvents = events.filter(e => {
     // Compare using UTC strings to avoid timezone shifts
     const eventDateStr = moment.utc(e.date).format('YYYY-MM-DD');
     const targetMoment = moment.utc(selectedDate, 'YYYY-MM-DD');
     const eventMoment = moment.utc(eventDateStr, 'YYYY-MM-DD');
-    
+
     if (viewType === 'day') {
       return eventDateStr === selectedDate;
     } else if (viewType === 'week') {
@@ -93,13 +93,13 @@ export default function SummaryView({ events, transactions, onViewEvent, selecte
             ))}
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
-          <button onClick={prevRange} className="p-1.5 rounded bg-surface0 text-subtext0 hover:text-text hover:bg-surface1 transition border border-surface1"><ChevronLeft className="w-4 h-4"/></button>
+          <button onClick={prevRange} className="p-1.5 rounded bg-surface0 text-subtext0 hover:text-text hover:bg-surface1 transition border border-surface1"><ChevronLeft className="w-4 h-4" /></button>
           <div className="font-bold text-sm min-w-[150px] text-center text-text">
             {formatRangeLabel()}
           </div>
-          <button onClick={nextRange} className="p-1.5 rounded bg-surface0 text-subtext0 hover:text-text hover:bg-surface1 transition border border-surface1"><ChevronRight className="w-4 h-4"/></button>
+          <button onClick={nextRange} className="p-1.5 rounded bg-surface0 text-subtext0 hover:text-text hover:bg-surface1 transition border border-surface1"><ChevronRight className="w-4 h-4" /></button>
         </div>
       </div>
 
@@ -108,18 +108,18 @@ export default function SummaryView({ events, transactions, onViewEvent, selecte
           {filteredEvents.map((e, i) => {
             const assignedCount = e.staff?.length || 0;
             const neededCount = e.neededPeople || 0;
-            
+
             const linkedTransactions = transactions.filter(tr => tr.eventId === e._id);
             const totalPaid = linkedTransactions
               .filter(tr => tr.category === 'revenue')
               .reduce((acc, curr) => acc + curr.amount, 0);
-            
+
             const remaining = (e.totalPrice || 0) - totalPaid;
             const statusColor = neededCount > 0 && assignedCount < neededCount ? '#f38ba8' : '#a6e3a1';
-            
+
             return (
-              <div 
-                key={e._id || i} 
+              <div
+                key={e._id || i}
                 onClick={() => onViewEvent(e)}
                 className="bg-mantle border border-surface0 rounded-lg p-3 hover:border-accent/50 transition-all cursor-pointer group shadow-sm flex flex-col gap-3"
               >
@@ -135,14 +135,14 @@ export default function SummaryView({ events, transactions, onViewEvent, selecte
                         </span>
                       )}
                       <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest border
-                        ${e.status === 'Confirmed' ? 'bg-green/10 text-green border-green/20' : 
-                          e.status === 'Completed' ? 'bg-blue/10 text-blue border-blue/20' : 
-                          e.status === 'Planning' ? 'bg-yellow/10 text-yellow border-yellow/20' : 
-                          'bg-surface1 text-subtext1 border-surface2'}
+                        ${e.status === 'Confirmed' ? 'bg-green/10 text-green border-green/20' :
+                          e.status === 'Completed' ? 'bg-blue/10 text-blue border-blue/20' :
+                            e.status === 'Planning' ? 'bg-yellow/10 text-yellow border-yellow/20' :
+                              'bg-surface1 text-subtext1 border-surface2'}
                       `}>{t(`statuses.${e.status}`)}</span>
                       <span className="text-[10px] text-subtext0 font-mono">#{String(e.eventNumber || 0).padStart(4, '0')}</span>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                       <div className="flex items-center gap-1.5 text-subtext1">
                         <CalendarIcon className="w-3.5 h-3.5 text-accent" />

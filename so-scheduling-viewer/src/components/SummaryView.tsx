@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { EventType } from '@/types';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Phone, MapPin, Mail, Users, Package, StickyNote, Plus, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Phone, MapPin, Mail, Users, Package, StickyNote, Plus, X, Link as LinkIcon, Check } from 'lucide-react';
 import moment from 'moment';
 import { useTranslations } from 'next-intl';
 
@@ -19,10 +19,11 @@ interface Props {
 
 export default function SummaryView({ events, selectedDate, setSelectedDate, highlightedEventId, onAddStaff, onRemoveStaff }: Props) {
   const t = useTranslations('Common');
-  const [viewType, setViewType] = useState<ViewType>('day');
+  const [viewType, setViewType] = useState<ViewType>('month');
   const [addingStaffTo, setAddingStaffTo] = useState<string | null>(null);
   const [staffName, setStaffName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const highlightedRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,11 +32,22 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
     }
   }, [highlightedEventId]);
 
+  const handleCopyLink = (event: EventType) => {
+    const dateStr = moment.utc(event.date).format('YYYY-MM-DD');
+    const url = new URL(window.location.href);
+    url.searchParams.set('date', dateStr);
+    url.searchParams.set('event', event._id!);
+
+    navigator.clipboard.writeText(url.toString());
+    setCopyStatus(event._id!);
+    setTimeout(() => setCopyStatus(null), 2000);
+  };
+
   const filteredEvents = events.filter(e => {
     const eventDateStr = moment.utc(e.date).format('YYYY-MM-DD');
     const targetMoment = moment.utc(selectedDate, 'YYYY-MM-DD');
     const eventMoment = moment.utc(eventDateStr, 'YYYY-MM-DD');
-    
+
     if (viewType === 'day') {
       return eventDateStr === selectedDate;
     } else if (viewType === 'week') {
@@ -102,7 +114,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
 
   return (
     <div className="flex flex-col h-full w-full bg-[#1e1e2e] border-none sm:border border-[#313244] sm:rounded-lg overflow-hidden text-[#cdd6f4]" onClick={(e) => e.stopPropagation()}>
-      <div className="p-3 border-b border-[#313244] bg-[#11111b] flex flex-col sm:flex-row gap-3 justify-between items-center shrink-0">
+      <div className="p-3 border-b border-[#313244] bg-mantle flex flex-col sm:flex-row gap-3 justify-between items-center shrink-0">
         <div className="flex items-center gap-3">
           <h2 className="font-bold text-sm sm:text-xl text-[#cba6f7] flex items-center gap-2">
             <CalendarIcon className="w-4 h-4 text-[#cba6f7] hidden sm:block" />
@@ -120,13 +132,13 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
             ))}
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
-          <button onClick={prevRange} className="p-1.5 rounded bg-[#313244] text-[#a6adc8] hover:text-[#cdd6f4] border border-[#45475a]"><ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4"/></button>
+          <button onClick={prevRange} className="p-1.5 rounded bg-[#313244] text-[#a6adc8] hover:text-[#cdd6f4] border border-[#45475a]"><ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" /></button>
           <div className="font-bold text-[11px] sm:text-sm min-w-[100px] sm:min-w-[150px] text-center">
             {formatRangeLabel()}
           </div>
-          <button onClick={nextRange} className="p-1.5 rounded bg-[#313244] text-[#a6adc8] hover:text-[#cdd6f4] border border-[#45475a]"><ChevronRight className="w-3 h-3 sm:w-4 sm:h-4"/></button>
+          <button onClick={nextRange} className="p-1.5 rounded bg-[#313244] text-[#a6adc8] hover:text-[#cdd6f4] border border-[#45475a]"><ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" /></button>
         </div>
       </div>
 
@@ -137,10 +149,10 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
             const neededCount = e.neededPeople || 0;
             const staffColorClass = getStaffColor(assignedCount, neededCount);
             const isHighlighted = highlightedEventId === e._id;
-            
+
             return (
-              <div 
-                key={e._id || i} 
+              <div
+                key={e._id || i}
                 ref={isHighlighted ? highlightedRef : null}
                 className={`bg-[#181825] border rounded-lg sm:rounded-xl p-0 transition-all duration-500 shadow-lg group relative overflow-hidden flex flex-col
                   ${isHighlighted ? 'border-[#cba6f7] ring-1 ring-[#cba6f7]/20 bg-[#1e1e2e] scale-[1.01] z-10' : 'border-[#313244]'}
@@ -148,7 +160,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
               >
                 <div className="p-3 sm:p-5 flex flex-col md:flex-row justify-between gap-3 sm:gap-6">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                    <div className="flex items-center flex-wrap gap-2 mb-2 sm:mb-3">
                       <h3 className={`font-bold text-sm sm:text-xl ${isHighlighted ? 'text-[#cba6f7]' : 'text-[#f5e0dc]'}`}>
                         {e.show}
                       </h3>
@@ -158,20 +170,41 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
                         </span>
                       )}
                       <span className={`text-[8px] sm:text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider
-                        ${e.status === 'Confirmed' ? 'bg-[#a6e3a1]/10 text-[#a6e3a1]' : 
-                          e.status === 'Completed' ? 'bg-[#89b4fa]/10 text-[#89b4fa]' : 
-                          e.status === 'Planning' ? 'bg-[#f9e2af]/10 text-[#f9e2af]' : 
-                          'bg-[#6c7086]/10 text-[#6c7086]'}
+                        ${e.status === 'Confirmed' ? 'bg-[#a6e3a1]/10 text-[#a6e3a1]' :
+                          e.status === 'Completed' ? 'bg-[#89b4fa]/10 text-[#89b4fa]' :
+                            e.status === 'Planning' ? 'bg-[#f9e2af]/10 text-[#f9e2af]' :
+                              'bg-[#6c7086]/10 text-[#6c7086]'}
                       `}>{t(`statuses.${e.status}`)}</span>
+
+                      <button
+                        onClick={(ev) => { ev.stopPropagation(); handleCopyLink(e); }}
+                        className={`ml-auto flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all
+                          ${copyStatus === e._id
+                            ? 'bg-[#a6e3a1] text-[#11111b]'
+                            : 'bg-[#313244] text-[#a6adc8] hover:text-[#cdd6f4] hover:bg-[#45475a]'}
+                        `}
+                      >
+                        {copyStatus === e._id ? (
+                          <>
+                            <Check className="w-3 h-3" />
+                            <span>{t('linkCopied')}</span>
+                          </>
+                        ) : (
+                          <>
+                            <LinkIcon className="w-3 h-3" />
+                            <span>{t('copyLink')}</span>
+                          </>
+                        )}
+                      </button>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 sm:gap-y-3 gap-x-8 text-[11px] sm:text-sm">
                       <div className="flex items-baseline gap-2 text-[#a6adc8]">
                         <CalendarIcon className="hidden sm:block w-4 h-4 text-[#cba6f7] shrink-0" />
                         <span className="text-[9px] uppercase font-bold text-[#6c7086] w-10 sm:hidden">{t('time')}:</span>
                         <p className="font-medium text-[#cdd6f4]">{moment.utc(e.date).format('MMM D')} | {e.startTime} - {e.endTime}</p>
                       </div>
-                      
+
                       <div className="flex items-baseline gap-2 text-[#a6adc8]">
                         <MapPin className="hidden sm:block w-4 h-4 text-[#cba6f7] shrink-0" />
                         <span className="text-[9px] uppercase font-bold text-[#6c7086] w-10 sm:hidden">{t('loc')}:</span>
@@ -207,7 +240,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
                         <span className={`text-lg sm:text-2xl font-black ${staffColorClass}`}>{assignedCount}/{neededCount}</span>
                       </div>
                       <span className="text-[8px] sm:text-[10px] uppercase tracking-widest text-[#6c7086] font-black mb-2">{t('staffAssigned')}</span>
-                      
+
                       <div className="flex flex-wrap justify-center gap-1 w-full mb-3">
                         {e.staff && e.staff.length > 0 ? (
                           e.staff.map((s, idx) => (
@@ -234,7 +267,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Details Section */}
                 <div className="bg-[#11111b]/30 border-t border-[#313244] p-3 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
                   <div className="space-y-2">
