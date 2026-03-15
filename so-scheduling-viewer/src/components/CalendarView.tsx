@@ -13,14 +13,20 @@ const localizer = momentLocalizer(moment);
 interface Props {
   events: EventType[];
   onEventClick: (e: EventType) => void;
+  selectedDate: string; // "YYYY-MM-DD"
 }
 
-export default function CalendarView({ events, onEventClick }: Props) {
+export default function CalendarView({ events, onEventClick, selectedDate }: Props) {
   const t = useTranslations('Common');
   const [viewType, setViewType] = useState<View>(Views.WEEK);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(() => moment.utc(selectedDate, 'YYYY-MM-DD').toDate());
   const [isMobile, setIsMobile] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Sync with prop if it changes externally
+  useEffect(() => {
+    setCurrentDate(moment.utc(selectedDate, 'YYYY-MM-DD').toDate());
+  }, [selectedDate]);
 
   // Auto-scroll to current time when view changes or component mounts
   useEffect(() => {

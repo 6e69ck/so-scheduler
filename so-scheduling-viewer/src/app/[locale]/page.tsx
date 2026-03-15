@@ -45,6 +45,15 @@ function HomeContent() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (highlightedEventId && events.length > 0) {
+      const target = events.find(e => e._id === highlightedEventId);
+      if (target && target.status === 'Planning') {
+        setShowPending(true);
+      }
+    }
+  }, [highlightedEventId, events]);
+
   const handleEventClick = (event: EventType) => {
     const dateStr = moment.utc(event.date).format('YYYY-MM-DD');
     setSelectedDate(dateStr);
@@ -137,14 +146,14 @@ function HomeContent() {
 
           <div className="flex bg-[#11111b] rounded-xl p-1 border border-[#313244] shadow-inner">
             <button
-              onClick={() => setView('summary')}
+              onClick={() => { setView('summary'); setHighlightedEventId(null); }}
               className={`flex items-center justify-center px-4 sm:px-6 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all duration-300 ${view === 'summary' ? 'bg-[#cba6f7] text-[#11111b] shadow-lg' : 'text-[#a6adc8] hover:text-[#cdd6f4]'}`}
             >
               <FileText className="w-3 h-3 sm:w-4 h-4 mr-1 sm:mr-2" />
               {t('summary')}
             </button>
             <button
-              onClick={() => setView('calendar')}
+              onClick={() => { setView('calendar'); setHighlightedEventId(null); }}
               className={`flex items-center justify-center px-4 sm:px-6 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all duration-300 ${view === 'calendar' ? 'bg-[#cba6f7] text-[#11111b] shadow-lg' : 'text-[#a6adc8] hover:text-[#cdd6f4]'}`}
             >
               <Calendar className="w-3 h-3 sm:w-4 h-4 mr-1 sm:mr-2" />
@@ -161,6 +170,7 @@ function HomeContent() {
             <CalendarView
               events={filteredEvents}
               onEventClick={handleEventClick}
+              selectedDate={selectedDate}
             />
           ) : (
             <SummaryView

@@ -20,7 +20,7 @@ interface Props {
 export default function SummaryView({ events, selectedDate, setSelectedDate, highlightedEventId, onAddStaff, onRemoveStaff }: Props) {
   const t = useTranslations('Common');
   const locale = useLocale();
-  const [viewType, setViewType] = useState<ViewType>('month');
+  const [viewType, setViewType] = useState<ViewType>(highlightedEventId ? 'week' : 'month');
   const [addingStaffTo, setAddingStaffTo] = useState<string | null>(null);
   const [staffName, setStaffName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,6 +45,8 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
       if (monthEvents.length === 0) {
         setViewType('year');
       }
+      setHasAutoSwitched(true);
+    } else if (events.length > 0 && !hasAutoSwitched && highlightedEventId) {
       setHasAutoSwitched(true);
     }
   }, [events, selectedDate, hasAutoSwitched, highlightedEventId]);
@@ -151,7 +153,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#1e1e2e] border-none sm:border border-[#313244] sm:rounded-lg overflow-hidden text-[#cdd6f4]" onClick={(e) => e.stopPropagation()}>
+    <div className="flex flex-col h-full w-full bg-[#1e1e2e] border-none sm:border border-[#313244] sm:rounded-lg overflow-hidden text-[#cdd6f4]">
       <div className="p-3 border-b border-[#313244] bg-mantle flex flex-col sm:flex-row gap-3 justify-between items-center shrink-0">
         <div className="flex items-center gap-3">
           <h2 className="font-bold text-sm sm:text-xl text-[#cba6f7] flex items-center gap-2">
@@ -193,6 +195,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
               <div
                 key={e._id || i}
                 ref={isHighlighted ? highlightedRef : null}
+                onClick={(ev) => ev.stopPropagation()}
                 className={`bg-[#181825] border rounded-lg sm:rounded-xl p-0 transition-all duration-500 shadow-lg group relative overflow-hidden flex flex-col
                   ${isHighlighted ? 'border-[#cba6f7] ring-1 ring-[#cba6f7]/20 bg-[#1e1e2e] scale-[1.01] z-10' : 'border-[#313244]'}
                 `}
