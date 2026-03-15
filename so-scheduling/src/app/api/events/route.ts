@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       // Auto-increment eventNumber
       const counter = await Counter.findByIdAndUpdate(
         { _id: 'eventNumber' },
-        { $inc: { seq: 1 } },
+        { $inc: { seq: 1 }, $setOnInsert: { type: 'counter' } },
         { new: true, upsert: true }
       );
       body.eventNumber = counter.seq;

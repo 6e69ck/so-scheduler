@@ -5,7 +5,7 @@ import { Calendar, momentLocalizer, Views, View } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { EventType } from '@/types';
-import { Plus, Printer, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
+import { Plus, Printer, ChevronLeft, ChevronRight, MapPin, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 const localizer = momentLocalizer(moment);
@@ -23,6 +23,39 @@ export default function CalendarView({ events, onEditEvent, onCreateEvent, onVie
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedRange, setSelectedRange] = useState<{ start: Date, end: Date } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Auto-scroll to current time when view changes or component mounts
+  useEffect(() => {
+    if (viewType === Views.MONTH) return;
+
+    // Slight delay to ensure DOM has rendered the time slots
+    const timer = setTimeout(() => {
+      const container = document.querySelector('.rbc-time-content');
+      if (!container) return;
+
+      const currentHour = new Date().getHours();
+      // Calculate approximate position (each hour is usually around 60px, min is 6am)
+      // Or better yet, find the actual DOM element for the current time
+      const timeGutter = document.querySelector('.rbc-time-gutter');
+      if (timeGutter) {
+        const timeGroups = timeGutter.querySelectorAll('.rbc-timeslot-group');
+        // Times start at 12am (index 0) since min is set to 0,0,0
+        const targetIndex = Math.max(0, currentHour);
+
+        if (targetIndex < timeGroups.length) {
+          const targetElement = timeGroups[targetIndex] as HTMLElement;
+          const containerHeight = container.clientHeight;
+          const targetTop = targetElement.offsetTop;
+
+          // Center the current time in the view, clamping to min/max scroll
+          const scrollTo = Math.max(0, targetTop - (containerHeight / 2) + (targetElement.clientHeight / 2));
+          container.scrollTo({ top: scrollTo, behavior: 'smooth' });
+        }
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [viewType, currentDate]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -88,19 +121,21 @@ export default function CalendarView({ events, onEditEvent, onCreateEvent, onVie
   }, []);
 
   const prevDate = () => {
-    if (viewType === Views.DAY) setCurrentDate(moment(currentDate).subtract(1, 'day').toDate());
-    if (viewType === Views.WEEK) {
-      setCurrentDate(moment(currentDate).subtract(isMobile ? 3 : 7, 'days').toDate());
-    }
-    if (viewType === Views.MONTH) setCurrentDate(moment(currentDate).subtract(1, 'month').toDate());
+    setCurrentDate(prev => {
+      if (viewType === Views.DAY) return moment(prev).subtract(1, 'day').toDate();
+      if (viewType === Views.WEEK) return moment(prev).subtract(isMobile ? 3 : 7, 'days').toDate();
+      if (viewType === Views.MONTH) return moment(prev).subtract(1, 'month').toDate();
+      return prev;
+    });
   };
 
   const nextDate = () => {
-    if (viewType === Views.DAY) setCurrentDate(moment(currentDate).add(1, 'day').toDate());
-    if (viewType === Views.WEEK) {
-      setCurrentDate(moment(currentDate).add(isMobile ? 3 : 7, 'days').toDate());
-    }
-    if (viewType === Views.MONTH) setCurrentDate(moment(currentDate).add(1, 'month').toDate());
+    setCurrentDate(prev => {
+      if (viewType === Views.DAY) return moment(prev).add(1, 'day').toDate();
+      if (viewType === Views.WEEK) return moment(prev).add(isMobile ? 3 : 7, 'days').toDate();
+      if (viewType === Views.MONTH) return moment(prev).add(1, 'month').toDate();
+      return prev;
+    });
   };
 
   const eventStyleGetter = (event: any) => {
@@ -108,16 +143,32 @@ export default function CalendarView({ events, onEditEvent, onCreateEvent, onVie
       return {
         className: 'temp-selection-event',
         style: {
-          backgroundColor: '#cba6f7', 
+          backgroundColor: '#cba6f7',
           color: '#11111b',
           display: 'block'
         }
       };
     }
+
+    const e = event.resource as EventType;
+    const assigned = e.staff?.length || 0;
+    const needed = e.neededPeople || 0;
+
+    let backgroundColor = '#313244';
+    if (needed > 0) {
+      if (assigned >= needed) {
+        backgroundColor = 'rgba(166, 227, 161, 0.15)';
+      } else if (assigned >= needed / 2) {
+        backgroundColor = 'rgba(249, 226, 175, 0.15)';
+      } else {
+        backgroundColor = 'rgba(243, 139, 168, 0.15)';
+      }
+    }
+
     return {
       style: {
-        backgroundColor: '#f38ba8', 
-        color: '#11111b',
+        backgroundColor,
+        color: '#cdd6f4',
         border: '0px',
         borderRadius: '6px',
         display: 'block'
@@ -179,15 +230,21 @@ export default function CalendarView({ events, onEditEvent, onCreateEvent, onVie
           view={viewType as any}
           date={currentDate}
           onNavigate={(d) => setCurrentDate(d)}
-          onView={(v) => setViewType(v)}
-          step={15}
-          timeslots={4}
-          min={new Date(0, 0, 0, 0, 0, 0)}
-          max={new Date(0, 0, 0, 23, 59, 59)}
-          selectable
-          longPressThreshold={300}
+          onView={(v) => setViewType(v as View)}
           onSelectSlot={handleSelectSlot}
           onSelectEvent={handleEventClick}
+          step={30}
+          timeslots={2}
+          selectable
+          longPressThreshold={300}
+          dayPropGetter={(date: Date) => {
+            // Identify the DST Spring Forward day (Second Sunday in March) to apply a custom class
+            const isSecondSundayOfMarch = date.getMonth() === 2 && date.getDay() === 0 && date.getDate() >= 8 && date.getDate() <= 14;
+            if (isSecondSundayOfMarch) {
+              return { className: 'dst-spring-day' };
+            }
+            return {};
+          }}
           toolbar={false}
           scrollToTime={new Date()}
           eventPropGetter={eventStyleGetter}
@@ -200,33 +257,44 @@ export default function CalendarView({ events, onEditEvent, onCreateEvent, onVie
             }
           }}
           components={{
-            event: (props) => (
-              <div 
-                className="w-full h-full p-1 text-[10px] sm:text-xs overflow-hidden flex flex-col lg:flex-row lg:items-start lg:gap-2 cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEventClick(props.event);
-                }}
-                onMouseEnter={(e) => {
-                  if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-                  hoverTimeoutRef.current = setTimeout(() => {
-                    setHoverInfo({ event: props.event.resource, x: e.clientX, y: e.clientY });
-                  }, 250);
-                }}
-                onMouseLeave={() => {
-                  if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-                  setHoverInfo(null);
-                }}
-              >
-                <strong className="block truncate shrink-0">{props.title}</strong>
-                {props.event.resource.location && (
-                  <div className="truncate opacity-80 flex items-center gap-1 min-w-0 lg:flex-1">
-                    <MapPin className="w-3 h-3 shrink-0 hidden lg:block" />
-                    <span className="truncate">{props.event.resource.location}</span>
-                  </div>
-                )}
-              </div>
-            )
+            event: (props: any) => {
+              const e = props.event.resource as EventType;
+              const assigned = e.staff?.length || 0;
+              const needed = e.neededPeople || 0;
+              return (
+                <div
+                  className="w-full h-full p-1 text-[10px] sm:text-xs overflow-hidden flex flex-col gap-0.5 cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEventClick(props.event);
+                  }}
+                  onMouseEnter={(e) => {
+                    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+                    hoverTimeoutRef.current = setTimeout(() => {
+                      setHoverInfo({ event: props.event.resource, x: e.clientX, y: e.clientY });
+                    }, 250);
+                  }}
+                  onMouseLeave={() => {
+                    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+                    setHoverInfo(null);
+                  }}
+                >
+                  <strong className="block truncate shrink-0">{props.title}</strong>
+                  {(e.status as string) !== 'Selection' && (
+                    <div className="flex items-center gap-1 opacity-80 min-w-0">
+                      <Users className="w-3 h-3 shrink-0" />
+                      <span className="truncate">({assigned}/{needed})</span>
+                    </div>
+                  )}
+                  {e.location && (
+                    <div className="truncate opacity-80 flex items-center gap-1 min-w-0">
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span className="truncate">{e.location}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            }
           }}
         />
       </div>
@@ -243,7 +311,7 @@ export default function CalendarView({ events, onEditEvent, onCreateEvent, onVie
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        .rbc-calendar { background-color: transparent; }
+        .rbc-calendar { background-color: transparent; font-family: inherit; }
         .rbc-header { 
           border-bottom: 1px solid #313244 !important; 
           padding: 10px 0 !important; 
@@ -273,28 +341,74 @@ export default function CalendarView({ events, onEditEvent, onCreateEvent, onVie
         .rbc-label { color: #6c7086; font-size: 11px; }
         .rbc-events-container { margin-right: 0 !important; }
 
+        .rbc-day-slot {
+          background: repeating-linear-gradient(
+            45deg,
+            #1e1e2e,
+            #1e1e2e 10px,
+            #45475a 10px,
+            #45475a 20px
+          );
+        }
+
+        /* Target the specific DST spring forward day column. Since 2AM is missing, push the 3AM group (which falls into the 4th child index behind the events container) down by 48px. */
+        .dst-spring-day > .rbc-timeslot-group:nth-child(4) {
+          margin-top: 48px !important;
+        }
+
+        .rbc-timeslot-group { 
+          min-height: 48px !important; 
+          display: flex; 
+          flex-direction: column; 
+          justify-content: space-between; 
+          background-color: #1e1e2e;
+        }
+        .rbc-time-slot { min-height: 24px !important; }
+
         @media (max-width: 767px) {
           .rbc-time-view {
-            overflow-x: auto !important;
-            overflow-y: hidden !important;
-            scroll-snap-type: x mandatory;
+            overflow: auto !important;
+            scroll-snap-type: both mandatory;
+            scroll-padding-left: 50px;
+            scroll-padding-top: 45px;
+            scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
+            touch-action: pan-x pan-y;
+          }
+          .rbc-time-header {
+            position: sticky;
+            top: 0;
+            z-index: 105;
+            background-color: #1e1e2e;
           }
           .rbc-time-header, .rbc-time-content {
-            min-width: 233.33% !important; /* Forces 3 days to fit viewport width */
+            /* 50px is the gutter width. Container has p-2 (16px total). Leftover space for 3 days is (100vw - 16px - 50px) */
+            min-width: calc(50px + (7 * ((100vw - 16px - 50px) / 3))) !important;
           }
           .rbc-time-content {
-            overflow-y: auto !important;
-            touch-action: pan-y;
+            overflow-y: visible !important;
           }
           .rbc-header, .rbc-day-slot {
             scroll-snap-align: start;
-            scroll-margin-left: 50px;
+            min-width: calc((100vw - 16px - 50px) / 3) !important;
+            flex-basis: calc((100vw - 16px - 50px) / 3) !important;
           }
-          .rbc-time-gutter, .rbc-time-header-gutter {
+          .rbc-time-gutter {
             position: sticky !important;
             left: 0 !important;
             z-index: 100 !important;
+            background-color: #181825 !important;
+            border-right: 1px solid #313244 !important;
+            min-width: 50px !important;
+          }
+          .rbc-time-gutter .rbc-timeslot-group {
+            scroll-snap-align: start;
+          }
+          .rbc-time-header-gutter {
+            position: sticky !important;
+            left: 0 !important;
+            top: 0 !important;
+            z-index: 106 !important;
             background-color: #181825 !important;
             border-right: 1px solid #313244 !important;
             min-width: 50px !important;

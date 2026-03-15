@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import { createToken } from '@/lib/auth';
+import dbConnect from '@/lib/mongodb';
+import Misc from '@/models/Misc';
 
 export async function POST(req: Request) {
   try {
     const { password } = await req.json();
-    const correctPassword = process.env.ADMIN_PASSWORD || 'Eagle123!';
+    await dbConnect();
+    
+    const adminPasswordDoc = await Misc.findOne({ _id: 'adminPassword' });
+    const correctPassword = adminPasswordDoc?.value || process.env.ADMIN_PASSWORD || 'Eagle123!';
 
     if (password === correctPassword) {
       const token = await createToken({ role: 'admin' });

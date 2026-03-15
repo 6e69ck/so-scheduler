@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import moment from 'moment';
 import Event from '@/models/Event';
+import Misc from '@/models/Misc';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -11,6 +12,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     if (!name || name.trim() === '') {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+    }
+
+    const normalizedName = name.trim().toLowerCase();
+
+    // Check allowed team members from DB settings
+    const allowedTMDoc = await Misc.findOne({ _id: 'allowedTeamMembers' });
+    if (allowedTMDoc && allowedTMDoc.value && Array.isArray(allowedTMDoc.value) && allowedTMDoc.value.length > 0) {
+      const allowedList = allowedTMDoc.value.map((n: string) => n.trim().toLowerCase());
+      if (!allowedList.includes(normalizedName)) {
+        return NextResponse.json({ error: 'You are not in the allowed team members list' }, { status: 403 });
+      }
     }
 
     const event = await Event.findById(id);
@@ -23,8 +35,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
 
     // Add name if not already present
-    if (!event.staff.includes(name.trim())) {
-      event.staff.push(name.trim());
+    if (!event.staff.includes(normalizedName)) {
+      event.staff.push(normalizedName);
       await event.save();
     } else {
       return NextResponse.json({ error: 'Name already added to this show' }, { status: 400 });

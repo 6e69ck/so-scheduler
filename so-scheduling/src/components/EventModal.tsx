@@ -17,6 +17,7 @@ interface Props {
   onClose: () => void;
   onSave: (e: EventType) => Promise<void> | void;
   onDelete: (id: string) => Promise<void> | void;
+  salesAssociates?: string[];
 }
 
 const SortableEquipmentItem = ({ id, item, onRemove }: { id: string, item: string, onRemove: (i: string) => void }) => {
@@ -38,7 +39,7 @@ const SortableEquipmentItem = ({ id, item, onRemove }: { id: string, item: strin
   );
 };
 
-export default function EventModal({ event, events, transactions, initialRange, onClose, onSave, onDelete }: Props) {
+export default function EventModal({ event, events, transactions, initialRange, onClose, onSave, onDelete, salesAssociates = [] }: Props) {
   const t = useTranslations('Common');
 
   const getInitialDate = () => {
@@ -104,7 +105,7 @@ export default function EventModal({ event, events, transactions, initialRange, 
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const salesAssociates = (process.env.NEXT_PUBLIC_SALES_ASSOCIATES || '').split(',').map(s => s.trim()).filter(Boolean);
+  // No longer using process.env here as it's passed as a prop
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -143,8 +144,12 @@ export default function EventModal({ event, events, transactions, initialRange, 
   const handleStaffKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      const val = staffInput.trim();
-      if (val && !formData.staff?.includes(val)) {
+      const val = staffInput.trim().toLowerCase();
+      if (val) {
+        if (formData.staff?.includes(val)) {
+          alert("This person is already assigned to this show.");
+          return;
+        }
         setFormData({ ...formData, staff: [...(formData.staff || []), val] });
         setStaffInput('');
       }

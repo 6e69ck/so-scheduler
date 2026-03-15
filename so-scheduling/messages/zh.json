@@ -33,6 +33,8 @@
     "list": "列表",
     "ledger": "账目",
     "adminSummary": "管理摘要",
+    "adminTerminal": "管理员终端",
+    "settings": "设置",
     "noEvents": "该时段没有演出。",
     "noneAssigned": "暂无人员",
     "close": "关闭",

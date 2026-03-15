@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import CalendarView from '@/components/CalendarView';
 import LedgerView from '@/components/LedgerView';
 import SummaryView from '@/components/SummaryView';
@@ -7,15 +7,16 @@ import EventModal from '@/components/EventModal';
 import ViewEventModal from '@/components/ViewEventModal';
 import AdHocInvoiceModal from '@/components/AdHocInvoiceModal';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import SettingsView from '@/components/SettingsView';
 import { EventType, TransactionType } from '@/types';
-import { Calendar, LayoutGrid, FileText, Loader2 } from 'lucide-react';
+import { Calendar, LayoutGrid, FileText, Loader2, Menu as MenuIcon, X as CloseIcon, Settings } from 'lucide-react';
 import moment from 'moment';
 import { useTranslations } from 'next-intl';
 import AuthWrapper from '@/components/AuthWrapper';
 
 function AdminDashboard() {
   const t = useTranslations('Common');
-  const [view, setView] = useState<'calendar' | 'spreadsheet' | 'summary'>('calendar');
+  const [view, setView] = useState<'calendar' | 'spreadsheet' | 'summary' | 'settings'>('calendar');
   const [events, setEvents] = useState<EventType[]>([]);
   const [transactions, setTransactions] = useState<TransactionType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +25,10 @@ function AdminDashboard() {
   const [editingEvent, setEditingEvent] = useState<EventType | null>(null);
   const [viewingEvent, setViewingEvent] = useState<EventType | null>(null);
   const [initialRange, setInitialRange] = useState<{ start: Date, end: Date } | undefined>();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [salesAssociates, setSalesAssociates] = useState<string[]>([]);
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0, opacity: 0 });
+  const navRef = useRef<HTMLDivElement>(null);
 
   // Use local date string for selectedDate to match calendar display
   const [selectedDate, setSelectedDate] = useState<string>(moment().format('YYYY-MM-DD'));
@@ -36,9 +41,10 @@ function AdminDashboard() {
         return;
       }
 
-      const [eRes, tRes] = await Promise.all([
+      const [eRes, tRes, sRes] = await Promise.all([
         fetch('/api/events', { headers: { 'Authorization': auth } }),
-        fetch('/api/transactions', { headers: { 'Authorization': auth } })
+        fetch('/api/transactions', { headers: { 'Authorization': auth } }),
+        fetch('/api/settings', { headers: { 'Authorization': auth } })
       ]);
 
       if (!eRes.ok || !tRes.ok) {
@@ -55,6 +61,8 @@ function AdminDashboard() {
 
       setEvents(await eRes.json());
       setTransactions(await tRes.json());
+      const sData = await sRes.json();
+      setSalesAssociates(sData.salesAssociates || []);
     } catch (err) {
       console.error('Failed to fetch data', err);
       alert('Network error while fetching data. Please check your connection.');
@@ -62,6 +70,17 @@ function AdminDashboard() {
       setLoading(false);
     }
   };
+
+  useLayoutEffect(() => {
+    const activeBtn = navRef.current?.querySelector('[data-active="true"]') as HTMLElement;
+    if (activeBtn) {
+      setIndicatorStyle({
+        left: activeBtn.offsetLeft,
+        width: activeBtn.offsetWidth,
+        opacity: 1
+      });
+    }
+  }, [view, loading]);
 
   useEffect(() => {
     fetchData();
@@ -172,44 +191,110 @@ function AdminDashboard() {
   return (
     <div className="h-screen bg-base flex flex-col text-text font-sans overflow-hidden">
       {/* Header */}
-      <div className="bg-mantle border-b border-surface0 px-4 py-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0 shadow-lg relative z-30">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center shadow-lg shadow-accent/20">
-            <Calendar className="w-6 h-6 text-crust" />
+      <div className="bg-mantle border-b border-surface0 px-4 py-2 sm:px-6 sm:py-4 flex flex-row justify-between items-center gap-2 sm:gap-4 shrink-0 shadow-lg relative z-30">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-accent rounded-xl flex items-center justify-center shadow-lg shadow-accent/20 shrink-0">
+            <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-crust" />
           </div>
           <div>
-            <h1 className="text-xl font-black tracking-tighter text-text uppercase leading-none">Soaring<span className="text-accent">Eagles</span></h1>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-subtext0 font-bold mt-1">Admin Terminal</p>
+            <h1 className="text-base sm:text-xl font-black tracking-tighter text-text uppercase leading-none">Soaring<span className="text-accent">Eagles</span></h1>
+            <p className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] text-subtext0 font-bold mt-0.5 sm:mt-1 whitespace-nowrap">{t('adminTerminal')}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <LanguageSwitcher />
 
-          <div className="flex bg-crust rounded-xl p-1 border border-surface0 shadow-inner">
+          {/* Desktop Navigation */}
+          <div ref={navRef} className="hidden sm:flex bg-crust rounded-xl p-1 border border-surface0 shadow-inner relative">
+            {/* Sliding Indicator */}
+            <div
+              className="absolute bg-accent rounded-lg transition-all duration-300 ease-in-out shadow-md"
+              style={{
+                left: indicatorStyle.left,
+                width: indicatorStyle.width,
+                top: '4px',
+                bottom: '4px',
+                opacity: indicatorStyle.opacity,
+                zIndex: 0
+              }}
+            />
             <button
               onClick={() => setView('calendar')}
-              className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'calendar' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
+              data-active={view === 'calendar'}
+              className={`relative z-10 flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-300 ${view === 'calendar' ? 'text-crust' : 'text-subtext0 hover:text-text hover:bg-surface0/50'}`}
             >
               <Calendar className="w-4 h-4 mr-2" />
               {t('calendar')}
             </button>
             <button
               onClick={() => setView('summary')}
-              className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'summary' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
+              data-active={view === 'summary'}
+              className={`relative z-10 flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-300 ${view === 'summary' ? 'text-crust' : 'text-subtext0 hover:text-text hover:bg-surface0/50'}`}
             >
               <FileText className="w-4 h-4 mr-2" />
               {t('summary')}
             </button>
             <button
               onClick={() => setView('spreadsheet')}
-              className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${view === 'spreadsheet' ? 'bg-accent text-crust shadow-md' : 'text-subtext0 hover:text-text hover:bg-surface0'}`}
+              data-active={view === 'spreadsheet'}
+              className={`relative z-10 flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-300 ${view === 'spreadsheet' ? 'text-crust' : 'text-subtext0 hover:text-text hover:bg-surface0/50'}`}
             >
               <LayoutGrid className="w-4 h-4 mr-2" />
               {t('list')}
             </button>
+            <button
+              onClick={() => setView('settings')}
+              data-active={view === 'settings'}
+              className={`relative z-10 flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-300 ${view === 'settings' ? 'text-crust' : 'text-subtext0 hover:text-text hover:bg-surface0/50'}`}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              {t('settings')}
+            </button>
           </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="sm:hidden p-2 bg-crust border border-surface0 rounded-xl text-subtext0 hover:text-accent transition-all duration-200"
+          >
+            {isMenuOpen ? <CloseIcon className="w-6 h-6 text-red-400" /> : <MenuIcon className="w-6 h-6 text-accent" />}
+          </button>
         </div>
+
+        {/* Mobile Menu Dropdown */}
+        {isMenuOpen && (
+          <div className="absolute top-full left-0 right-0 bg-mantle border-b border-surface0 p-4 flex flex-col gap-2 sm:hidden shadow-2xl animate-in slide-in-from-top duration-200">
+            <button
+              onClick={() => { setView('calendar'); setIsMenuOpen(false); }}
+              className={`flex items-center w-full px-4 py-3 rounded-xl text-sm font-bold transition-all ${view === 'calendar' ? 'bg-accent text-crust' : 'text-subtext0 bg-crust border border-surface0'}`}
+            >
+              <Calendar className="w-5 h-5 mr-3" />
+              {t('calendar')}
+            </button>
+            <button
+              onClick={() => { setView('summary'); setIsMenuOpen(false); }}
+              className={`flex items-center w-full px-4 py-3 rounded-xl text-sm font-bold transition-all ${view === 'summary' ? 'bg-accent text-crust' : 'text-subtext0 bg-crust border border-surface0'}`}
+            >
+              <FileText className="w-5 h-5 mr-3" />
+              {t('summary')}
+            </button>
+            <button
+              onClick={() => { setView('spreadsheet'); setIsMenuOpen(false); }}
+              className={`flex items-center w-full px-4 py-3 rounded-xl text-sm font-bold transition-all ${view === 'spreadsheet' ? 'bg-accent text-crust' : 'text-subtext0 bg-crust border border-surface0'}`}
+            >
+              <Calendar className="w-5 h-5 mr-3" />
+              {t('list')}
+            </button>
+            <button
+              onClick={() => { setView('settings'); setIsMenuOpen(false); }}
+              className={`flex items-center w-full px-4 py-3 rounded-xl text-sm font-bold transition-all ${view === 'settings' ? 'bg-accent text-crust' : 'text-subtext0 bg-crust border border-surface0'}`}
+            >
+              <Settings className="w-5 h-5 mr-3" />
+              {t('settings')}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Main Content */}
@@ -234,7 +319,7 @@ function AdminDashboard() {
               selectedDate={selectedDate}
               setSelectedDate={setSelectedDate}
             />
-          ) : (
+          ) : view === 'spreadsheet' ? (
             <LedgerView
               events={events}
               onEditEvent={(e) => { setEditingEvent(e); setIsModalOpen(true); }}
@@ -242,6 +327,8 @@ function AdminDashboard() {
               onSaveEvent={handleSaveEvent}
               onTriggerAdHoc={() => setIsAdHocModalOpen(true)}
             />
+          ) : (
+            <SettingsView />
           )}
         </div>
       </div>
@@ -265,6 +352,7 @@ function AdminDashboard() {
           onClose={() => { setIsModalOpen(false); setEditingEvent(null); }}
           onSave={handleSaveEvent}
           onDelete={handleDeleteEvent}
+          salesAssociates={salesAssociates}
         />
       )}
 

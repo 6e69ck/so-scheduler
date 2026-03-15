@@ -33,6 +33,8 @@
     "list": "List",
     "ledger": "Ledger",
     "adminSummary": "Admin Summary",
+    "adminTerminal": "Admin Terminal",
+    "settings": "Settings",
     "noEvents": "No events for this period.",
     "noneAssigned": "None assigned",
     "close": "Close",

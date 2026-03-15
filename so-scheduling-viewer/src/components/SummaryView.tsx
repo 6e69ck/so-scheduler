@@ -101,9 +101,17 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
   };
 
   const handleStaffSubmit = async (eventId: string) => {
-    if (!staffName.trim()) return;
+    const normalizedName = staffName.trim().toLowerCase();
+    if (!normalizedName) return;
+
+    const event = events.find(e => e._id === eventId);
+    if (event && event.staff && event.staff.includes(normalizedName)) {
+      alert("You have already added your name to this show.");
+      return;
+    }
+
     setIsSubmitting(true);
-    await onAddStaff(eventId, staffName);
+    await onAddStaff(eventId, normalizedName);
     setIsSubmitting(false);
     setStaffName('');
     setAddingStaffTo(null);
