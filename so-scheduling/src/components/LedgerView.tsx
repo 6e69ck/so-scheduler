@@ -55,7 +55,7 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
 
   useEffect(() => {
     if (events.length > 0 && expandedEventIds.size === 0) {
-      setExpandedEventIds(new Set(events.map(e => e._id!)));
+      setExpandedEventIds(new Set(events.map(e => e.linkedId || e._id!)));
     }
   }, [events]);
 
@@ -200,21 +200,36 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
   };
 
-  const eventNodes = events.map(e => {
-    // For linked children, show parent's transactions (since all transactions are redirected to parent)
-    const effectiveId = e.linkedId || e._id;
-    const children = standaloneTransactions.filter(tr => tr.eventId === effectiveId);
+  // Group events by linked relationship
+  const eventGroups = new Map<string, EventType[]>();
+  events.forEach(e => {
+    const groupId = e.linkedId || e._id!;
+    if (!eventGroups.has(groupId)) eventGroups.set(groupId, []);
+    eventGroups.get(groupId)!.push(e);
+  });
+
+  const eventNodes = Array.from(eventGroups.entries()).map(([groupId, groupEvents]) => {
+    // Sort by date to get the earliest one for the main row display
+    const sortedGroup = [...groupEvents].sort((a, b) => moment(a.date).diff(moment(b.date)));
+    const parentEvent = sortedGroup.find(e => !e.linkedId) || sortedGroup[0];
+    
+    // Combine names
+    const combinedNames = sortedGroup.map(e => e.show).join(', ');
+    
+    // Transactions are attached to the groupId (the parent _id)
+    const children = standaloneTransactions.filter(tr => tr.eventId === groupId);
+    
     return {
-      id: e._id!,
-      date: moment.utc(e.date).format('YYYY-MM-DD'),
-      title: e.show,
-      subtitle: e.companyName || e.clientName,
+      id: groupId, // Use groupId for row uniqueness and transaction association
+      date: moment.utc(parentEvent.date).format('YYYY-MM-DD'),
+      title: combinedNames,
+      subtitle: parentEvent.companyName || parentEvent.clientName,
       revenue: children.filter(tr => tr.category === 'revenue').reduce((acc, curr) => acc + curr.amount, 0),
       expense: children.filter(tr => tr.category === 'reimbursement').reduce((acc, curr) => acc + curr.amount, 0),
       source: 'event' as const,
-      data: e,
+      data: parentEvent, // Use parent for edit/view actions
       children: children.sort((a, b) => moment(b.date).diff(moment(a.date))),
-      linkedId: e.linkedId || null,
+      linkedId: parentEvent.linkedId || null,
     };
   });
 
