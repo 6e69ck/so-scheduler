@@ -18,6 +18,7 @@ export interface EventType {
   neededPeople: number;
   eventNumber?: number;
   transactions?: TransactionType[];
+  linkedId?: string;
 }
 
 export type TransactionAccount = 'Bank' | 'Member Reimbursements' | 'Fees' | 'Tips';

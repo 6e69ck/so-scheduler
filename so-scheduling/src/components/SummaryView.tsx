@@ -109,7 +109,8 @@ export default function SummaryView({ events, transactions, onViewEvent, selecte
             const assignedCount = e.staff?.length || 0;
             const neededCount = e.neededPeople || 0;
 
-            const linkedTransactions = transactions.filter(tr => tr.eventId === e._id);
+            const effectiveId = e.linkedId || e._id;
+            const linkedTransactions = transactions.filter(tr => tr.eventId === effectiveId);
             const totalPaid = linkedTransactions
               .filter(tr => tr.category === 'revenue')
               .reduce((acc, curr) => acc + curr.amount, 0);

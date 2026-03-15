@@ -4,7 +4,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { EventType } from '@/types';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Phone, MapPin, Mail, Users, Package, StickyNote, Plus, X, Link as LinkIcon, Check } from 'lucide-react';
 import moment from 'moment';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 
 type ViewType = 'day' | 'week' | 'month' | 'year';
 
@@ -19,11 +19,13 @@ interface Props {
 
 export default function SummaryView({ events, selectedDate, setSelectedDate, highlightedEventId, onAddStaff, onRemoveStaff }: Props) {
   const t = useTranslations('Common');
+  const locale = useLocale();
   const [viewType, setViewType] = useState<ViewType>('month');
   const [addingStaffTo, setAddingStaffTo] = useState<string | null>(null);
   const [staffName, setStaffName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [hasAutoSwitched, setHasAutoSwitched] = useState(false);
   const highlightedRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,6 +33,21 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
       highlightedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [highlightedEventId]);
+
+  useEffect(() => {
+    if (events.length > 0 && !hasAutoSwitched && !highlightedEventId) {
+      const monthEvents = events.filter(e => {
+        const targetMoment = moment.utc(selectedDate, 'YYYY-MM-DD');
+        const endMoment = targetMoment.clone().add(1, 'month');
+        const eventMoment = moment.utc(e.date);
+        return !eventMoment.isBefore(targetMoment, 'day') && eventMoment.isBefore(endMoment, 'day');
+      });
+      if (monthEvents.length === 0) {
+        setViewType('year');
+      }
+      setHasAutoSwitched(true);
+    }
+  }, [events, selectedDate, hasAutoSwitched, highlightedEventId]);
 
   const handleCopyLink = (event: EventType) => {
     const dateStr = moment.utc(event.date).format('YYYY-MM-DD');
@@ -53,9 +70,11 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
     } else if (viewType === 'week') {
       return eventMoment.isSame(targetMoment, 'week');
     } else if (viewType === 'month') {
-      return eventMoment.isSame(targetMoment, 'month');
+      const endMoment = targetMoment.clone().add(1, 'month');
+      return !eventMoment.isBefore(targetMoment, 'day') && eventMoment.isBefore(endMoment, 'day');
     } else {
-      return eventMoment.isSame(targetMoment, 'year');
+      const endMoment = targetMoment.clone().add(1, 'year');
+      return !eventMoment.isBefore(targetMoment, 'day') && eventMoment.isBefore(endMoment, 'day');
     }
   }).sort((a, b) => {
     const dateA = moment.utc(a.date).format('YYYY-MM-DD');
@@ -108,8 +127,19 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
       const end = moment(mDate).endOf('week');
       return `${start.format('MMM D')} - ${end.format('D, YYYY')}`;
     }
-    if (viewType === 'month') return mDate.format('MMMM YYYY');
-    return mDate.format('YYYY');
+    if (viewType === 'month') {
+      const end = mDate.clone().add(1, 'month');
+      if (locale === 'zh') {
+        const endYearStr = mDate.year() !== end.year() ? `${end.format('YYYY')}年` : '';
+        return `${mDate.format('YYYY')}年${mDate.format('M')}月${mDate.format('D')}日 - ${endYearStr}${end.format('M')}月${end.format('D')}日`;
+      }
+      return `${mDate.format('MMM D')} - ${end.format('MMM D, YYYY')}`;
+    }
+    const endYear = mDate.clone().add(1, 'year');
+    if (locale === 'zh') {
+      return `${mDate.format('YYYY')}-${endYear.format('YYYY')}年${mDate.format('M')}月${mDate.format('D')}日`;
+    }
+    return `${mDate.format('MMM D, YYYY')}-${endYear.format('YYYY')}`;
   };
 
   return (
@@ -149,6 +179,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
             const neededCount = e.neededPeople || 0;
             const staffColorClass = getStaffColor(assignedCount, neededCount);
             const isHighlighted = highlightedEventId === e._id;
+            const isPast = moment.utc(e.date).startOf('day').isBefore(moment.utc().startOf('day'));
 
             return (
               <div
@@ -247,7 +278,9 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
                             <div key={idx} className="group/staff relative">
                               <span className="text-[9px] sm:text-[10px] bg-[#313244] border border-[#45475a] px-1.5 py-0.5 rounded text-[#cdd6f4] font-medium flex items-center gap-1">
                                 {s}
-                                <button onClick={() => onRemoveStaff(e._id!, s)} className="text-[#6c7086] hover:text-[#f38ba8]"><X className="w-2 h-2" /></button>
+                                {!isPast && (
+                                  <button onClick={() => onRemoveStaff(e._id!, s)} className="text-[#6c7086] hover:text-[#f38ba8]"><X className="w-2 h-2" /></button>
+                                )}
                               </span>
                             </div>
                           ))
@@ -256,13 +289,15 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
                         )}
                       </div>
 
-                      {addingStaffTo === e._id ? (
-                        <div className="w-full flex gap-1">
-                          <input autoFocus type="text" placeholder={t('yourName')} value={staffName} onChange={(e) => setStaffName(e.target.value)} onKeyDown={(ev) => ev.key === 'Enter' && handleStaffSubmit(e._id!)} className="bg-[#11111b] border border-[#cba6f7] rounded px-1.5 py-1 text-[10px] w-full outline-none" />
-                          <button onClick={() => handleStaffSubmit(e._id!)} className="bg-[#cba6f7] text-[#11111b] px-2 rounded"><Plus className="w-3 h-3" /></button>
-                        </div>
-                      ) : (
-                        <button onClick={() => setAddingStaffTo(e._id!)} className="w-full py-1 sm:py-2 bg-[#313244] rounded text-[10px] sm:text-xs font-bold text-[#cba6f7] border border-[#45475a]">{t('joinShow')}</button>
+                      {!isPast && (
+                        addingStaffTo === e._id ? (
+                          <div className="w-full flex gap-1">
+                            <input autoFocus type="text" placeholder={t('yourName')} value={staffName} onChange={(e) => setStaffName(e.target.value)} onKeyDown={(ev) => ev.key === 'Enter' && handleStaffSubmit(e._id!)} className="bg-[#11111b] border border-[#cba6f7] rounded px-1.5 py-1 text-[10px] w-full outline-none" />
+                            <button onClick={() => handleStaffSubmit(e._id!)} className="bg-[#cba6f7] text-[#11111b] px-2 rounded"><Plus className="w-3 h-3" /></button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setAddingStaffTo(e._id!)} className="w-full py-1 sm:py-2 bg-[#313244] rounded text-[10px] sm:text-xs font-bold text-[#cba6f7] border border-[#45475a]">{t('joinShow')}</button>
+                        )
                       )}
                     </div>
                   </div>

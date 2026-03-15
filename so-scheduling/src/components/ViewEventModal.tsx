@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { EventType, TransactionType, InvoiceLineItem } from '@/types';
-import { X, Calendar as CalendarIcon, MapPin, Phone, Mail, Clock, Package, StickyNote, FileText, ExternalLink, RefreshCw, Plus, Edit2 } from 'lucide-react';
+import { X, Calendar as CalendarIcon, MapPin, Phone, Mail, Clock, Package, StickyNote, FileText, ExternalLink, RefreshCw, Plus, Edit2, Wallet, DollarSign } from 'lucide-react';
 import moment from 'moment';
 import { useTranslations } from 'next-intl';
 import CustomInvoiceModal from './CustomInvoiceModal';
@@ -19,11 +19,12 @@ export default function ViewEventModal({ event, transactions, onClose, onEdit, o
   const t = useTranslations('Common');
   const [showCustomModal, setShowCustomModal] = useState(false);
 
-  const linkedTransactions = transactions.filter(tr => tr.eventId === event._id);
+  const effectiveEventId = event.linkedId || event._id;
+  const linkedTransactions = transactions.filter(tr => tr.eventId === effectiveEventId);
   const totalPaid = linkedTransactions
     .filter(tr => tr.category === 'revenue')
     .reduce((acc, curr) => acc + curr.amount, 0);
-  
+
   const remaining = (event.totalPrice || 0) - totalPaid;
 
   const openInvoice = (hash: string) => {
@@ -36,12 +37,12 @@ export default function ViewEventModal({ event, transactions, onClose, onEdit, o
       const auth = localStorage.getItem('soaring_admin_session') || '';
       const res = await fetch('/api/invoices', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': auth
         },
-        body: JSON.stringify({ 
-          eventId: event._id, 
+        body: JSON.stringify({
+          eventId: effectiveEventId,
           type,
           customLineItems,
           customTotal: customLineItems?.reduce((acc, curr) => acc + curr.amount, 0)
@@ -111,6 +112,39 @@ export default function ViewEventModal({ event, transactions, onClose, onEdit, o
             </div>
           </div>
 
+          {/* Transaction List */}
+          <div className="space-y-2">
+            <span className="text-[10px] uppercase font-black text-subtext0 tracking-widest flex items-center gap-2">
+              <Wallet className="w-3 h-3" /> Transactions ({linkedTransactions.length})
+            </span>
+            {linkedTransactions.length > 0 ? (
+              <div className="bg-crust border border-surface0 rounded-xl overflow-hidden divide-y divide-surface0">
+                {linkedTransactions
+                  .sort((a, b) => moment(b.date).diff(moment(a.date)))
+                  .map((tr, i) => (
+                    <div key={tr._id || i} className="flex items-center justify-between px-3 py-2 hover:bg-surface0/30 transition-colors">
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="text-[10px] text-subtext1 font-medium truncate">
+                          {tr.notes || t(`intents.${tr.intent || 'payment'}`)}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[8px] font-mono text-subtext0">{moment.utc(tr.date).format('MMM D, YYYY')}</span>
+                          <span className="text-[7px] uppercase font-black tracking-widest text-subtext0 border border-surface1 px-1 rounded">
+                            {tr.type === 'e-transfer' ? 'E-Transfer' : tr.type}
+                          </span>
+                        </div>
+                      </div>
+                      <span className={`text-xs font-black shrink-0 ${tr.category === 'revenue' ? 'text-green' : 'text-red'}`}>
+                        {tr.category === 'revenue' ? '+' : '-'}${Math.abs(tr.amount).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <p className="text-[10px] text-surface2 italic bg-base p-3 rounded-lg border border-surface0">No transactions recorded</p>
+            )}
+          </div>
+
           <div className="space-y-2">
             <span className="text-[10px] uppercase font-black text-subtext0 tracking-widest flex items-center gap-2">
               <Package className="w-3 h-3" /> {t('equipment')}
@@ -147,9 +181,9 @@ export default function ViewEventModal({ event, transactions, onClose, onEdit, o
       </div>
 
       {showCustomModal && (
-        <CustomInvoiceModal 
-          event={event} 
-          onClose={() => setShowCustomModal(false)} 
+        <CustomInvoiceModal
+          event={event}
+          onClose={() => setShowCustomModal(false)}
           onGenerate={(items) => generateInvoice('custom', items)}
         />
       )}

@@ -18,11 +18,20 @@ export async function POST(req: Request) {
     const { eventId, type, customLineItems, customTotal, details } = body;
 
     let snapshot = {};
-    
+
     if (eventId) {
       const event = await Event.findById(eventId);
       if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
       snapshot = event.toObject();
+
+      // For linked events, combine all show names
+      const parentId = event.linkedId || event._id;
+      const linkedEvents = await Event.find({
+        $or: [{ _id: parentId }, { linkedId: parentId }]
+      }).sort({ date: 1 });
+      if (linkedEvents.length > 1) {
+        (snapshot as any).show = linkedEvents.map((e: any) => e.show).join(', ');
+      }
     } else if (details) {
       // Ad-hoc invoice without an event
       snapshot = {
@@ -34,7 +43,7 @@ export async function POST(req: Request) {
     }
 
     const hash = crypto.randomBytes(16).toString('hex');
-    
+
     // Generate unique shortHash
     let shortHash = generateShortHash();
     let isUnique = false;
@@ -70,7 +79,7 @@ export async function GET(req: Request) {
     await dbConnect();
     const { searchParams } = new URL(req.url);
     const hash = searchParams.get('hash');
-    
+
     if (hash) {
       const invoice = await Invoice.findOne({ hash });
       return NextResponse.json(invoice);

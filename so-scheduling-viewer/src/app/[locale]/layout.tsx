@@ -18,6 +18,10 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "Soaring Eagles Schedule Viewer",
   description: "Internal schedule viewer for the team",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function LocaleLayout({

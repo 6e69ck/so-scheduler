@@ -24,7 +24,7 @@ function AdminDashboard() {
   const [editingEvent, setEditingEvent] = useState<EventType | null>(null);
   const [viewingEvent, setViewingEvent] = useState<EventType | null>(null);
   const [initialRange, setInitialRange] = useState<{ start: Date, end: Date } | undefined>();
-  
+
   // Use local date string for selectedDate to match calendar display
   const [selectedDate, setSelectedDate] = useState<string>(moment().format('YYYY-MM-DD'));
 
@@ -40,7 +40,7 @@ function AdminDashboard() {
         fetch('/api/events', { headers: { 'Authorization': auth } }),
         fetch('/api/transactions', { headers: { 'Authorization': auth } })
       ]);
-      
+
       if (!eRes.ok || !tRes.ok) {
         if (eRes.status === 401 || tRes.status === 401) {
           localStorage.removeItem('soaring_admin_session');
@@ -75,7 +75,7 @@ function AdminDashboard() {
     try {
       const res = await fetch(url, {
         method,
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': auth
         },
@@ -96,7 +96,7 @@ function AdminDashboard() {
   const handleDeleteEvent = async (id: string) => {
     const auth = localStorage.getItem('soaring_admin_session') || '';
     try {
-      const res = await fetch(`/api/events/${id}`, { 
+      const res = await fetch(`/api/events/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': auth }
       });
@@ -122,7 +122,7 @@ function AdminDashboard() {
   const handleDeleteTransaction = async (id: string) => {
     const auth = localStorage.getItem('soaring_admin_session') || '';
     try {
-      const res = await fetch(`/api/transactions/${id}`, { 
+      const res = await fetch(`/api/transactions/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': auth }
       });
@@ -139,12 +139,12 @@ function AdminDashboard() {
       const auth = localStorage.getItem('soaring_admin_session') || '';
       const res = await fetch('/api/invoices', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': auth
         },
-        body: JSON.stringify({ 
-          details, 
+        body: JSON.stringify({
+          details,
           customLineItems: items,
           type: 'custom'
         })
@@ -185,7 +185,7 @@ function AdminDashboard() {
 
         <div className="flex items-center gap-4">
           <LanguageSwitcher />
-          
+
           <div className="flex bg-crust rounded-xl p-1 border border-surface0 shadow-inner">
             <button
               onClick={() => setView('calendar')}
@@ -216,8 +216,8 @@ function AdminDashboard() {
       <div className="flex-1 p-0 sm:p-4 md:p-6 overflow-hidden flex flex-col min-h-0 bg-base relative z-10">
         <div className="flex-1 bg-mantle sm:rounded-2xl border-none sm:border border-surface0 shadow-2xl overflow-hidden relative">
           {view === 'calendar' ? (
-            <CalendarView 
-              events={events} 
+            <CalendarView
+              events={events}
               onEditEvent={(e) => { setEditingEvent(e); setIsModalOpen(true); }}
               onViewEvent={handleViewEvent}
               onCreateEvent={(start, end) => {
@@ -227,17 +227,17 @@ function AdminDashboard() {
               }}
             />
           ) : view === 'summary' ? (
-            <SummaryView 
-              events={events} 
+            <SummaryView
+              events={events}
               transactions={transactions}
               onViewEvent={setViewingEvent}
               selectedDate={selectedDate}
               setSelectedDate={setSelectedDate}
             />
           ) : (
-            <LedgerView 
-              events={events} 
-              onEditEvent={(e) => { setEditingEvent(e); setIsModalOpen(true); }} 
+            <LedgerView
+              events={events}
+              onEditEvent={(e) => { setEditingEvent(e); setIsModalOpen(true); }}
               onViewEvent={handleViewEvent}
               onSaveEvent={handleSaveEvent}
               onTriggerAdHoc={() => setIsAdHocModalOpen(true)}
@@ -247,11 +247,11 @@ function AdminDashboard() {
       </div>
 
       {viewingEvent && (
-        <ViewEventModal 
-          event={viewingEvent} 
+        <ViewEventModal
+          event={viewingEvent}
           transactions={transactions}
-          onClose={() => setViewingEvent(null)} 
-          onEdit={(e) => { setViewingEvent(null); setEditingEvent(e); setIsModalOpen(true); }} 
+          onClose={() => setViewingEvent(null)}
+          onEdit={(e) => { setViewingEvent(null); setEditingEvent(e); setIsModalOpen(true); }}
           onRefresh={() => fetchData()}
         />
       )}
@@ -259,6 +259,8 @@ function AdminDashboard() {
       {isModalOpen && (
         <EventModal
           event={editingEvent}
+          events={events}
+          transactions={transactions}
           initialRange={initialRange}
           onClose={() => { setIsModalOpen(false); setEditingEvent(null); }}
           onSave={handleSaveEvent}
@@ -267,7 +269,7 @@ function AdminDashboard() {
       )}
 
       {isAdHocModalOpen && (
-        <AdHocInvoiceModal 
+        <AdHocInvoiceModal
           onClose={() => setIsAdHocModalOpen(false)}
           onGenerate={handleGenerateAdHoc}
         />

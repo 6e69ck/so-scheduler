@@ -15,6 +15,10 @@ const roboto = Roboto({
 export const metadata = {
   title: "Soaring Eagles Admin",
   description: "Administrative Scheduling Terminal",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function LocaleLayout({

@@ -108,7 +108,7 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
       const method = editingTransactionId ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': auth
         },
@@ -130,7 +130,7 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
     if (!confirm('Are you sure?')) return;
     const auth = localStorage.getItem('soaring_admin_session') || '';
     try {
-      const res = await fetch(`/api/transactions/${id}`, { 
+      const res = await fetch(`/api/transactions/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': auth }
       });
@@ -201,7 +201,9 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
   };
 
   const eventNodes = events.map(e => {
-    const children = standaloneTransactions.filter(tr => tr.eventId === e._id);
+    // For linked children, show parent's transactions (since all transactions are redirected to parent)
+    const effectiveId = e.linkedId || e._id;
+    const children = standaloneTransactions.filter(tr => tr.eventId === effectiveId);
     return {
       id: e._id!,
       date: moment.utc(e.date).format('YYYY-MM-DD'),
@@ -211,7 +213,8 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
       expense: children.filter(tr => tr.category === 'reimbursement').reduce((acc, curr) => acc + curr.amount, 0),
       source: 'event' as const,
       data: e,
-      children: children.sort((a, b) => moment(b.date).diff(moment(a.date)))
+      children: children.sort((a, b) => moment(b.date).diff(moment(a.date))),
+      linkedId: e.linkedId || null,
     };
   });
 

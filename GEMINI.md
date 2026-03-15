@@ -4,28 +4,8 @@
 
 The project uses a shared MongoDB database with an `events` collection. The data is managed via Mongoose models.
 
-### Event Model (`models/Event.ts`)
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `show` | String | (Required) Name of the show/event |
-| `clientName` | String | Name of the primary contact person |
-| `companyName` | String | (Optional) Name of the company |
-| `date` | Date | (Required) Date of the event |
-| `startTime` | String | Start time in 24h format (e.g., "10:00") |
-| `endTime` | String | End time in 24h format (e.g., "11:00") |
-| `location` | String | Physical address/location of the event |
-| `notes` | String | General notes about the event |
-| `status` | String | Enum: `None`, `Planning`, `Confirmed`, `Completed` |
-| `salesAssoc` | String | Name of the sales associate |
-| `clientPhone` | String | Sanitized phone number (digits only) |
-| `clientEmail` | String | Client contact email |
-| `totalPrice` | Number | Total cost of the event |
-| `paidBalance` | Number | Amount already paid |
-| `gear` | [String] | Array of equipment items needed |
-| `staff` | [String] | Array of staff names assigned/registered |
-| `neededPeople`| Number | Total number of staff required |
-| `eventNumber` | Number | Auto-incremented unique ID (zero-padded to 4 digits in UI) |
-| `tips` | Number | Tip amount |
+## Database Modification
+- Ensure any modifications to schema or logic maintain backwards-compatibility with old data.
 
 **Virtuals:**
 - `remainingBalance`: `totalPrice` - `paidBalance`

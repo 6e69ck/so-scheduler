@@ -11,6 +11,26 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const checkSession = () => {
+      const loginTime = localStorage.getItem('soaring_login_time');
+      if (loginTime) {
+        const elapsed = Date.now() - parseInt(loginTime, 10);
+        if (elapsed > 24 * 60 * 60 * 1000) { // 24 hours
+          localStorage.removeItem('soaring_admin_session');
+          localStorage.removeItem('soaring_login_time');
+          window.location.reload();
+        }
+      }
+    };
+
+    // Check every 5 minutes
+    const interval = setInterval(checkSession, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
     const verifyToken = async () => {
       const auth = localStorage.getItem('soaring_admin_session');
       if (!auth) {
@@ -56,7 +76,9 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
 
       if (data.success) {
         localStorage.setItem('soaring_admin_session', data.token);
+        localStorage.setItem('soaring_login_time', Date.now().toString());
         setIsAuthenticated(true);
+        window.location.reload();
       } else {
         setError(true);
         setPassword('');

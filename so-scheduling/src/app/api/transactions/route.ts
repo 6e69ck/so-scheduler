@@ -20,6 +20,15 @@ export async function POST(req: Request) {
   try {
     await dbConnect();
     const body = await req.json();
+
+    if (body.eventId) {
+      const Event = (await import('@/models/Event')).default;
+      const event = await Event.findById(body.eventId);
+      if (event && event.linkedId) {
+        body.eventId = event.linkedId;
+      }
+    }
+
     const newTransaction = await Transaction.create(body);
     return NextResponse.json(newTransaction, { status: 201 });
   } catch (error: any) {

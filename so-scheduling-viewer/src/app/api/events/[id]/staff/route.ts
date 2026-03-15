@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
+import moment from 'moment';
 import Event from '@/models/Event';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -15,6 +16,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const event = await Event.findById(id);
     if (!event) {
       return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+    }
+
+    if (moment.utc(event.date).startOf('day').isBefore(moment.utc().startOf('day'))) {
+      return NextResponse.json({ error: 'Cannot modify a past show' }, { status: 403 });
     }
 
     // Add name if not already present

@@ -14,7 +14,7 @@ import { useTranslations } from 'next-intl';
 function HomeContent() {
   const t = useTranslations('Common');
   const searchParams = useSearchParams();
-  
+
   const initialDate = searchParams.get('date') || moment.utc().format('YYYY-MM-DD');
   const initialEventId = searchParams.get('event');
 
@@ -72,7 +72,7 @@ function HomeContent() {
 
   const handleRemoveStaff = async (eventId: string, name: string) => {
     if (!confirm(t('confirmRemove', { name }))) return;
-    
+
     try {
       const res = await fetch(`/api/events/${eventId}/staff/remove`, {
         method: 'POST',
@@ -111,7 +111,7 @@ function HomeContent() {
   }
 
   return (
-    <div className="h-screen bg-[#11111b] flex flex-col text-[#cdd6f4] font-sans" onClick={clearHighlight}>
+    <div className="fixed inset-0 overflow-hidden bg-[#11111b] flex flex-col text-[#cdd6f4] font-sans" onClick={clearHighlight}>
       {/* Header */}
       <div className="bg-[#181825] border-b border-[#313244] px-4 py-2 sm:px-6 sm:py-4 flex justify-between items-center shadow-lg shrink-0" onClick={(e) => e.stopPropagation()}>
         <div className="hidden sm:flex items-center gap-3">
@@ -126,7 +126,7 @@ function HomeContent() {
         <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end gap-4">
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
-            <button 
+            <button
               onClick={() => setShowPending(!showPending)}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all border ${showPending ? 'bg-[#cba6f7]/10 border-[#cba6f7] text-[#cba6f7]' : 'bg-[#1e1e2e] border-[#313244] text-[#6c7086]'}`}
             >
@@ -155,34 +155,24 @@ function HomeContent() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-0 sm:p-6 overflow-hidden flex flex-col min-h-0 bg-[#11111b]">
-        <div className="flex-1 bg-[#1e1e2e] border-none sm:border border-[#313244] sm:rounded-2xl shadow-2xl overflow-hidden relative">
+      <div className="flex-1 p-0 sm:p-2 overflow-hidden flex flex-col min-h-0 bg-[#11111b]">
+        <div className="flex-1 bg-[#1e1e2e] border-none sm:border border-[#313244] sm:rounded-lg shadow-2xl overflow-hidden relative">
           {view === 'calendar' ? (
-            <CalendarView 
-              events={filteredEvents} 
-              onEventClick={handleEventClick} 
+            <CalendarView
+              events={filteredEvents}
+              onEventClick={handleEventClick}
             />
           ) : (
-            <SummaryView 
-              events={filteredEvents} 
-              selectedDate={selectedDate} 
-              setSelectedDate={setSelectedDate} 
+            <SummaryView
+              events={filteredEvents}
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
               highlightedEventId={highlightedEventId}
               onAddStaff={handleAddStaff}
               onRemoveStaff={handleRemoveStaff}
             />
           )}
         </div>
-      </div>
-      
-      {/* Footer */}
-      <div className="bg-[#11111b] px-6 py-2 border-t border-[#313244] flex justify-between items-center text-[8px] sm:text-[10px] uppercase tracking-widest text-[#6c7086] font-bold shrink-0">
-        <div>{t('teamAccess')}</div>
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-          {t('liveData')}
-        </div>
-        <div>v1.2.1</div>
       </div>
     </div>
   );

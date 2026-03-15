@@ -18,6 +18,7 @@ export interface IEvent extends mongoose.Document {
   staff: string[];
   neededPeople: number;
   eventNumber?: number;
+  linkedId?: string;
 }
 
 const EventSchema = new mongoose.Schema<IEvent>({
@@ -38,6 +39,7 @@ const EventSchema = new mongoose.Schema<IEvent>({
   staff: { type: [String], default: [] },
   neededPeople: { type: Number, default: 0 },
   eventNumber: { type: Number },
+  linkedId: { type: String, default: null },
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

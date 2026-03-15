@@ -23,6 +23,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     await dbConnect();
     const { id } = await params;
     const body = await req.json();
+
+    if (body.eventId) {
+      const Event = (await import('@/models/Event')).default;
+      const event = await Event.findById(body.eventId);
+      if (event && event.linkedId) {
+        body.eventId = event.linkedId;
+      }
+    }
+
     const updated = await Transaction.findByIdAndUpdate(id, body, { new: true });
     if (!updated) {
       return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
