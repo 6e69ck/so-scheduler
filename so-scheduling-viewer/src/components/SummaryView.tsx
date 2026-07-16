@@ -165,10 +165,23 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
 
   const formatPhone = (phone: string) => {
     if (!phone) return 'N/A';
+    if (phone.startsWith('+')) {
+      const spaceIdx = phone.indexOf(' ');
+      if (spaceIdx !== -1) {
+        const country = phone.substring(0, spaceIdx);
+        const local = phone.substring(spaceIdx + 1);
+        
+        if (country === '+1' && local.length === 10) {
+          return `${local.substring(0, 3)}-${local.substring(3, 6)}-${local.substring(6)}`;
+        } else if (country === '+86' && local.length === 11) {
+          return `+86 ${local.substring(0, 3)}-${local.substring(3, 7)}-${local.substring(7)}`;
+        }
+        return `${country} ${local}`;
+      }
+    }
     const cleaned = ('' + phone).replace(/\D/g, '');
-    const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
-    if (match) {
-      return `${match[1]}-${match[2]}-${match[3]}`;
+    if (cleaned.length === 10) {
+      return `${cleaned.substring(0, 3)}-${cleaned.substring(3, 6)}-${cleaned.substring(6)}`;
     }
     return phone;
   };

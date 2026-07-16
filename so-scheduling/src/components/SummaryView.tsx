@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { EventType, TransactionType } from '@/types';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Phone, MapPin, Mail, Users, Package, StickyNote } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Phone, MapPin, Mail, Users, Package, StickyNote, Plus } from 'lucide-react';
 import moment from 'moment';
 import { useTranslations } from 'next-intl';
 
@@ -14,9 +14,10 @@ interface Props {
   onViewEvent: (e: EventType) => void;
   selectedDate: string; // "YYYY-MM-DD"
   setSelectedDate: (date: string) => void;
+  onAddEvent?: () => void;
 }
 
-export default function SummaryView({ events, transactions, onViewEvent, selectedDate, setSelectedDate }: Props) {
+export default function SummaryView({ events, transactions, onViewEvent, selectedDate, setSelectedDate, onAddEvent }: Props) {
   const t = useTranslations('Common');
   const [viewType, setViewType] = useState<ViewType>('month');
 
@@ -55,9 +56,22 @@ export default function SummaryView({ events, transactions, onViewEvent, selecte
 
   const formatPhone = (phone: string) => {
     if (!phone) return '-';
+    if (phone.startsWith('+')) {
+      const spaceIdx = phone.indexOf(' ');
+      if (spaceIdx !== -1) {
+        const country = phone.substring(0, spaceIdx);
+        const local = phone.substring(spaceIdx + 1);
+        
+        if (country === '+1' && local.length === 10) {
+          return `${local.substring(0, 3)}-${local.substring(3, 6)}-${local.substring(6)}`;
+        } else if (country === '+86' && local.length === 11) {
+          return `+86 ${local.substring(0, 3)}-${local.substring(3, 7)}-${local.substring(7)}`;
+        }
+        return `${country} ${local}`;
+      }
+    }
     const cleaned = ('' + phone).replace(/\D/g, '');
-    const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
-    if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+    if (cleaned.length === 10) return `${cleaned.substring(0, 3)}-${cleaned.substring(3, 6)}-${cleaned.substring(6)}`;
     return phone;
   };
 
@@ -100,6 +114,15 @@ export default function SummaryView({ events, transactions, onViewEvent, selecte
             {formatRangeLabel()}
           </div>
           <button onClick={nextRange} className="p-1.5 rounded bg-surface0 text-subtext0 hover:text-text hover:bg-surface1 transition border border-surface1"><ChevronRight className="w-4 h-4" /></button>
+          {onAddEvent && (
+            <button
+              onClick={onAddEvent}
+              className="flex items-center gap-2 px-3 py-1.5 bg-accent text-crust rounded-lg text-xs font-bold hover:bg-accent-hover transition ml-2 shadow-md shadow-accent/10 whitespace-nowrap"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              {t('newShow')}
+            </button>
+          )}
         </div>
       </div>
 

@@ -5,7 +5,7 @@ import { Calendar, momentLocalizer, Views, View } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { EventType } from '@/types';
-import { Plus, Printer, ChevronLeft, ChevronRight, MapPin, Users } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, MapPin, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 const localizer = momentLocalizer(moment);
@@ -217,10 +217,6 @@ export default function CalendarView({ events, onEditEvent, onCreateEvent, onVie
             </button>
           </div>
         </div>
-
-        <button onClick={() => window.print()} className="hidden md:flex bg-surface0 text-text px-3 py-1.5 rounded-md items-center hover:bg-surface1 transition font-bold border border-surface1 hover:text-accent shrink-0">
-          <Printer className="w-4 h-4 mr-2 pointer-events-none" /> <span>{t('print')}</span>
-        </button>
       </div>
 
       <div className="flex-1 bg-mantle rounded-lg shadow-sm overflow-hidden relative calendar-container p-1 custom-rbc-container">

@@ -115,8 +115,46 @@ export default function EventModal({ event, events, transactions, initialRange, 
   };
 
   const handlePhoneBlur = () => {
-    const sanitized = formData.clientPhone.replace(/\D/g, '');
-    setFormData(prev => ({ ...prev, clientPhone: sanitized }));
+    const raw = formData.clientPhone.trim();
+    if (!raw) return;
+    
+    let cleaned = raw.replace(/[^\d+\s-]/g, '').trim();
+    cleaned = cleaned.replace(/[-\s]+/g, ' ');
+    
+    let formatted = '';
+    if (cleaned.startsWith('+')) {
+      const spaceIdx = cleaned.indexOf(' ');
+      if (spaceIdx !== -1) {
+        const country = cleaned.substring(0, spaceIdx).replace(/\D/g, '');
+        const local = cleaned.substring(spaceIdx).replace(/\D/g, '');
+        formatted = `+${country} ${local}`;
+      } else {
+        const digits = cleaned.substring(1).replace(/\D/g, '');
+        if (digits.startsWith('1') && digits.length === 11) {
+          formatted = `+1 ${digits.substring(1)}`;
+        } else if (digits.length === 10) {
+          formatted = `+1 ${digits}`;
+        } else {
+          formatted = `+${digits}`;
+        }
+      }
+    } else {
+      const pureDigits = cleaned.replace(/\D/g, '');
+      if (pureDigits.length === 10) {
+        formatted = `+1 ${pureDigits}`;
+      } else if (pureDigits.length === 11 && pureDigits.startsWith('1')) {
+        formatted = `+1 ${pureDigits.substring(1)}`;
+      } else if (cleaned.includes(' ')) {
+        const spaceIdx = cleaned.indexOf(' ');
+        const country = cleaned.substring(0, spaceIdx).replace(/\D/g, '');
+        const local = cleaned.substring(spaceIdx).replace(/\D/g, '');
+        formatted = `+${country} ${local}`;
+      } else {
+        formatted = pureDigits ? `+1 ${pureDigits}` : '';
+      }
+    }
+    
+    setFormData(prev => ({ ...prev, clientPhone: formatted }));
   };
 
   const handleTotalPriceBlurOrEnter = () => {

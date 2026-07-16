@@ -318,6 +318,10 @@ function AdminDashboard() {
               onViewEvent={setViewingEvent}
               selectedDate={selectedDate}
               setSelectedDate={setSelectedDate}
+              onAddEvent={() => {
+                setEditingEvent(null);
+                setIsModalOpen(true);
+              }}
             />
           ) : view === 'spreadsheet' ? (
             <LedgerView
