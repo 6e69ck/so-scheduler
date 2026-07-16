@@ -74,6 +74,8 @@ export default function EventModal({ event, events, transactions, initialRange, 
         clientName: event.clientName || '',
         companyName: event.companyName || '',
         billingAddress: event.billingAddress || '',
+        billingName: event.billingName || '',
+        billingPhone: event.billingPhone || '',
         surcharges: event.surcharges || [],
       };
     }
@@ -81,7 +83,7 @@ export default function EventModal({ event, events, transactions, initialRange, 
       show: '', clientName: '', companyName: '', date: getInitialDate(),
       startTime: getInitialTime(initialRange?.start, '10:00'),
       endTime: getInitialTime(initialRange?.end, '11:00'),
-      billingAddress: '', location: '', notes: '', status: 'None', salesAssoc: '', clientPhone: '', clientEmail: '',
+      billingAddress: '', billingName: '', billingPhone: '', location: '', notes: '', status: 'None', salesAssoc: '', clientPhone: '', clientEmail: '',
       totalPrice: 0, paidBalance: 0, gear: [], staff: [], neededPeople: 0, linkedId: '', surcharges: []
     };
   });
@@ -97,6 +99,8 @@ export default function EventModal({ event, events, transactions, initialRange, 
         clientName: event.clientName || '',
         companyName: event.companyName || '',
         billingAddress: event.billingAddress || '',
+        billingName: event.billingName || '',
+        billingPhone: event.billingPhone || '',
         surcharges: event.surcharges || [],
       });
       setTotalPriceStr(event.totalPrice?.toString() || '');
@@ -116,8 +120,8 @@ export default function EventModal({ event, events, transactions, initialRange, 
     setFormData({ ...formData, [name]: value });
   };
 
-  const handlePhoneBlur = () => {
-    const raw = formData.clientPhone.trim();
+  const handlePhoneBlur = (fieldName: 'clientPhone' | 'billingPhone') => {
+    const raw = (formData[fieldName] || '').trim();
     if (!raw) return;
     
     let cleaned = raw.replace(/[^\d+\s-]/g, '').trim();
@@ -156,7 +160,7 @@ export default function EventModal({ event, events, transactions, initialRange, 
       }
     }
     
-    setFormData(prev => ({ ...prev, clientPhone: formatted }));
+    setFormData(prev => ({ ...prev, [fieldName]: formatted }));
   };
 
   const handleTotalPriceBlurOrEnter = () => {
@@ -283,6 +287,8 @@ export default function EventModal({ event, events, transactions, initialRange, 
         salesAssoc: parent.salesAssoc,
         eventNumber: parent.eventNumber,
         billingAddress: parent.billingAddress || '',
+        billingName: parent.billingName || '',
+        billingPhone: parent.billingPhone || '',
         surcharges: parent.surcharges || [],
       }));
       setTotalPriceStr(parent.totalPrice?.toString() || '');
@@ -290,7 +296,7 @@ export default function EventModal({ event, events, transactions, initialRange, 
   };
 
   const renderLockedInput = ({ label, name, value, type = 'text', required = false, component: Component = 'input' as any, options = [] }: any) => {
-    const isShared = isLinked && ['clientName', 'companyName', 'clientPhone', 'clientEmail', 'totalPrice', 'salesAssoc', 'billingAddress', 'surcharges'].includes(name);
+    const isShared = isLinked && ['clientName', 'companyName', 'clientPhone', 'clientEmail', 'totalPrice', 'salesAssoc', 'billingAddress', 'billingName', 'billingPhone', 'surcharges'].includes(name);
 
     return (
       <div className={(name === 'show' || name === 'billingAddress') ? 'md:col-span-2' : ''}>
@@ -324,7 +330,13 @@ export default function EventModal({ event, events, transactions, initialRange, 
             name={name}
             value={value}
             onChange={name === 'totalPrice' ? (e) => setTotalPriceStr(e.target.value) : handleChange}
-            onBlur={name === 'clientPhone' ? handlePhoneBlur : (name === 'totalPrice' ? handleTotalPriceBlurOrEnter : undefined)}
+            onBlur={
+              name === 'clientPhone'
+                ? () => handlePhoneBlur('clientPhone')
+                : name === 'billingPhone'
+                ? () => handlePhoneBlur('billingPhone')
+                : (name === 'totalPrice' ? handleTotalPriceBlurOrEnter : undefined)
+            }
             onKeyDown={name === 'totalPrice' ? (e) => handleInputKeyDown(e, handleTotalPriceBlurOrEnter) : undefined}
             readOnly={isShared}
             className={`w-full bg-surface0 border border-surface1 text-text rounded-lg p-2.5 focus:ring-1 focus:ring-accent focus:border-accent outline-none transition placeholder:text-surface2 hover:border-surface2 ${isShared ? 'bg-surface1/50 text-subtext0 cursor-not-allowed opacity-80' : ''} ${type === 'date' || type === 'time' ? '[color-scheme:dark]' : ''}`}
@@ -426,6 +438,10 @@ export default function EventModal({ event, events, transactions, initialRange, 
                 <input required type="time" name="endTime" value={formData.endTime} onChange={handleChange} className="w-full bg-surface0 border border-surface1 text-text rounded-lg p-2.5 focus:ring-1 focus:ring-accent focus:border-accent outline-none transition [color-scheme:dark] hover:border-surface2" />
               </div>
             </div>
+
+            {renderLockedInput({ label: t('billingName'), name: "billingName", value: formData.billingName || '' })}
+
+            {renderLockedInput({ label: t('billingPhone'), name: "billingPhone", value: formData.billingPhone || '' })}
 
             {renderLockedInput({ label: t('billingAddress'), name: "billingAddress", value: formData.billingAddress || '' })}
 

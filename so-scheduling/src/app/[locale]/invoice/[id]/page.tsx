@@ -24,6 +24,13 @@ export default async function InvoicePage(props: { params: Promise<{ id: string 
     notFound();
   }
 
+  const Transaction = (await import('@/models/Transaction')).default;
+  const eventIdToQuery = event.linkedId || event._id;
+  const linkedTransactions = await Transaction.find({ eventId: eventIdToQuery });
+  const paidBalance = linkedTransactions
+    .filter((tr: any) => tr.category === 'revenue')
+    .reduce((acc: number, curr: any) => acc + curr.amount, 0);
+
   const formatPhone = (phone: string) => {
     if (!phone) return '';
     if (phone.startsWith('+')) {
@@ -67,7 +74,6 @@ export default async function InvoicePage(props: { params: Promise<{ id: string 
   });
 
   const visualTotalPrice = basePrice + surchargesTotal;
-  const paidBalance = event.paidBalance || 0;
   let amountDue = 0;
   if (isDeposit) {
     amountDue = basePrice * 0.25;
@@ -129,7 +135,7 @@ export default async function InvoicePage(props: { params: Promise<{ id: string 
                   </span>
                 )}
                 <span className={`${event.companyName ? 'text-gray-700 text-lg font-semibold' : 'font-bold text-xl text-gray-900'} leading-tight block`}>
-                  {event.clientName}
+                  {event.billingName || event.clientName}
                 </span>
                 <div className="pt-6 flex flex-col gap-4 text-sm text-gray-600 font-medium">
                   {event.billingAddress && (
@@ -138,10 +144,10 @@ export default async function InvoicePage(props: { params: Promise<{ id: string 
                       <span className="text-gray-900">{event.billingAddress}</span>
                     </div>
                   )}
-                  {event.clientPhone && (
+                  {event.billingPhone && (
                     <div>
-                      <strong className="block text-gray-400 text-[10px] uppercase tracking-widest mb-1 font-semibold">Phone</strong>
-                      <span className="text-gray-900">{formatPhone(event.clientPhone)}</span>
+                      <strong className="block text-gray-400 text-[10px] uppercase tracking-widest mb-1 font-semibold">Phone Number</strong>
+                      <span className="text-gray-900">{formatPhone(event.billingPhone)}</span>
                     </div>
                   )}
                   {event.clientEmail && (
@@ -193,40 +199,28 @@ export default async function InvoicePage(props: { params: Promise<{ id: string 
                 </tr>
               </thead>
               <tbody>
-                {isDeposit ? (
-                  <tr className="border-b border-gray-50">
-                    <td className="py-6">
-                      <div className="font-bold text-gray-900 text-base">{invoiceType}</div>
-                      <div className="text-[10px] text-gray-400 mt-2 font-medium uppercase tracking-tight">
-                        Calculated as 25% of the contract amount (${basePrice.toFixed(2)})
-                      </div>
-                    </td>
-                    <td className="py-6 text-right font-bold text-gray-900 text-xl">${amountDue.toFixed(2)}</td>
-                  </tr>
-                ) : (
-                  <>
-                    <tr className="border-b border-gray-50">
+                <tr className="border-b border-gray-50">
+                  <td className="py-6">
+                    <div className="font-bold text-gray-900 text-base">Agreed Performance Contract Amount</div>
+                  </td>
+                  <td className="py-6 text-right font-bold text-gray-900 text-xl">${basePrice.toFixed(2)}</td>
+                </tr>
+                {computedSurcharges.map((s: any, idx: number) => {
+                  const isPercent = (s.value || '').trim().endsWith('%');
+                  return (
+                    <tr key={idx} className="border-b border-gray-50">
                       <td className="py-6">
-                        <div className="font-bold text-gray-900 text-base">Remaining Contract Balance</div>
+                        <div className="font-bold text-gray-900 text-base">
+                          {s.name} Surcharge{isPercent ? ` (${s.value})` : ''}
+                        </div>
                         <div className="text-[10px] text-gray-400 mt-2 font-medium uppercase tracking-tight">
-                          Calculated as contract amount (${basePrice.toFixed(2)}) minus paid balance (${paidBalance.toFixed(2)})
+                          Surcharge value: {s.value}
                         </div>
                       </td>
-                      <td className="py-6 text-right font-bold text-gray-900 text-xl">${(basePrice - paidBalance).toFixed(2)}</td>
+                      <td className="py-6 text-right font-bold text-gray-900 text-xl">${s.calculatedAmount.toFixed(2)}</td>
                     </tr>
-                    {computedSurcharges.map((s: any, idx: number) => (
-                      <tr key={idx} className="border-b border-gray-50">
-                        <td className="py-6">
-                          <div className="font-bold text-gray-900 text-base">{s.name} Surcharge</div>
-                          <div className="text-[10px] text-gray-400 mt-2 font-medium uppercase tracking-tight">
-                            Surcharge value: {s.value}
-                          </div>
-                        </td>
-                        <td className="py-6 text-right font-bold text-gray-900 text-xl">${s.calculatedAmount.toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </>
-                )}
+                  );
+                })}
               </tbody>
             </table>
           </div>

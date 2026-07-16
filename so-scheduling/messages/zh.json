@@ -12,6 +12,8 @@
     "startTime": "开始时间",
     "endTime": "结束时间",
     "billingAddress": "账单地址",
+    "billingName": "账单姓名",
+    "billingPhone": "账单电话",
     "location": "地点",
     "status": "状态",
     "salesAssoc": "销售代表",

@@ -12,6 +12,8 @@
     "startTime": "Start Time",
     "endTime": "End Time",
     "billingAddress": "Billing Address",
+    "billingName": "Billing Name",
+    "billingPhone": "Billing Phone",
     "location": "Location",
     "status": "Status",
     "salesAssoc": "Sales Associate",

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { EventType, TransactionType, InvoiceLineItem } from '@/types';
-import { X, Calendar as CalendarIcon, MapPin, Phone, Mail, Clock, Package, StickyNote, FileText, ExternalLink, RefreshCw, Plus, Edit2, Wallet, DollarSign } from 'lucide-react';
+import { X, Calendar as CalendarIcon, MapPin, Phone, Mail, Clock, Package, StickyNote, FileText, ExternalLink, RefreshCw, Plus, Edit2, Wallet, DollarSign, Users } from 'lucide-react';
 import moment from 'moment';
 import { useTranslations } from 'next-intl';
 import CustomInvoiceModal from './CustomInvoiceModal';
@@ -18,6 +18,25 @@ interface Props {
 export default function ViewEventModal({ event, transactions, onClose, onEdit, onRefresh }: Props) {
   const t = useTranslations('Common');
   const [showCustomModal, setShowCustomModal] = useState(false);
+
+  const formatPhone = (phone: string) => {
+    if (!phone) return '';
+    if (phone.startsWith('+')) {
+      const spaceIdx = phone.indexOf(' ');
+      if (spaceIdx !== -1) {
+        const country = phone.substring(0, spaceIdx);
+        const local = phone.substring(spaceIdx + 1);
+        
+        if (country === '+1' && local.length === 10) {
+          return `${local.substring(0, 3)}-${local.substring(3, 6)}-${local.substring(6)}`;
+        } else if (country === '+86' && local.length === 11) {
+          return `+86 ${local.substring(0, 3)}-${local.substring(3, 7)}-${local.substring(7)}`;
+        }
+        return `${country} ${local}`;
+      }
+    }
+    return phone;
+  };
 
   const effectiveEventId = event.linkedId || event._id;
   const linkedTransactions = transactions.filter(tr => tr.eventId === effectiveEventId);
@@ -108,6 +127,24 @@ export default function ViewEventModal({ event, transactions, onClose, onEdit, o
                 <span className="text-sm font-medium">{moment.utc(event.date).format('MMMM D, YYYY')} | {event.startTime} - {event.endTime}</span>
               </div>
             </div>
+            {event.billingName && (
+              <div className="flex items-center gap-3">
+                <Users className="w-4 h-4 text-accent" />
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-black text-subtext0">{t('billingName')}</span>
+                  <span className="text-sm font-medium">{event.billingName}</span>
+                </div>
+              </div>
+            )}
+            {event.billingPhone && (
+              <div className="flex items-center gap-3">
+                <Phone className="w-4 h-4 text-accent" />
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-black text-subtext0">{t('billingPhone')}</span>
+                  <span className="text-sm font-medium">{formatPhone(event.billingPhone)}</span>
+                </div>
+              </div>
+            )}
             {event.billingAddress && (
               <div className="flex items-center gap-3">
                 <MapPin className="w-4 h-4 text-accent" />

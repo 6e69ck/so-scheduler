@@ -77,6 +77,7 @@ export default function InvoicePage() {
 
   const { snapshot, type, customLineItems, customTotal } = invoice;
   const agreedTotal = snapshot.totalPrice || 0;
+  const paidBalance = snapshot.paidBalance || 0;
 
   let lineItems: { desc: string, subtext?: string, amount: number }[] = [];
   let finalDue = 0;
@@ -96,27 +97,28 @@ export default function InvoicePage() {
     return { name: s.name, value: s.value, calculatedAmount: amt };
   });
 
-  if (type === 'deposit') {
-    lineItems = [{
-      desc: `Security Deposit`,
-      subtext: `25% of Agreed Contract Total ($${agreedTotal.toFixed(2)})`,
-      amount: agreedTotal * 0.25
-    }];
-    finalDue = agreedTotal * 0.25;
-  } else if (type === 'remaining') {
+  const visualTotalPrice = basePrice + surchargesTotal;
+
+  if (type === 'deposit' || type === 'remaining') {
     lineItems = [
       {
-        desc: `Final Performance Balance`,
-        subtext: `75% of Agreed Contract Total ($${agreedTotal.toFixed(2)})`,
-        amount: agreedTotal * 0.75
+        desc: `Agreed Performance Contract Amount`,
+        amount: basePrice
       },
-      ...computedSurcharges.map(s => ({
-        desc: `${s.name} Surcharge`,
-        subtext: `Surcharge value: ${s.value}`,
-        amount: s.calculatedAmount
-      }))
+      ...computedSurcharges.map(s => {
+        const isPercent = (s.value || '').trim().endsWith('%');
+        return {
+          desc: `${s.name} Surcharge${isPercent ? ` (${s.value})` : ''}`,
+          subtext: `Surcharge value: ${s.value}`,
+          amount: s.calculatedAmount
+        };
+      })
     ];
-    finalDue = agreedTotal * 0.75 + surchargesTotal;
+    if (type === 'deposit') {
+      finalDue = visualTotalPrice * 0.25;
+    } else {
+      finalDue = visualTotalPrice - paidBalance;
+    }
   } else if (type === 'custom') {
     lineItems = (customLineItems || []).map(li => ({ desc: li.description, amount: li.amount }));
     finalDue = customTotal || lineItems.reduce((acc, curr) => acc + curr.amount, 0);
@@ -170,9 +172,9 @@ export default function InvoicePage() {
                       <InvTopDetailHeader>Bill To</InvTopDetailHeader>
                       <div className="space-y-3" style={{ fontSize: '10pt' }}>
                         <InvTopDetailItem label="Company" value={snapshot.companyName} />
-                        <InvTopDetailItem label="Client Name" value={snapshot.clientName} />
+                        <InvTopDetailItem label="Name" value={snapshot.billingName || snapshot.clientName} />
                         <InvTopDetailItem label="Billing Address" value={snapshot.billingAddress} />
-                        <InvTopDetailItem label="Phone Number" value={formatPhone(snapshot.clientPhone)} variant="medium" />
+                        <InvTopDetailItem label="Phone Number" value={snapshot.billingPhone ? formatPhone(snapshot.billingPhone) : ''} variant="medium" />
                         <InvTopDetailItem label="Email Address" value={snapshot.clientEmail} variant="medium" />
                       </div>
                     </div>
@@ -216,11 +218,29 @@ export default function InvoicePage() {
                 </table>
 
                 {/* Totals */}
-                <div className="flex justify-end">
-                  <div className="w-full max-w-[220px] border-t border-gray-400">
-                    <div className="flex justify-between items-center py-2">
-                      <span className="font-bold font-[12pt] text-gray-400 uppercase tracking-[0.1em]">Total Due</span>
-                      <span className="text-[12pt] font-bold text-gray-900">${finalDue.toFixed(2)}</span>
+                <div className="flex justify-end pt-2">
+                  <div className="w-full max-w-[280px] border-t border-gray-400 space-y-1.5 pt-2">
+                    {(type === 'deposit' || type === 'remaining') && (
+                      <div className="flex justify-between items-center text-[9pt] text-gray-500 font-medium uppercase tracking-wider">
+                        <span>Event Subtotal</span>
+                        <span>${visualTotalPrice.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {type === 'deposit' && (
+                      <div className="flex justify-between items-center text-[9pt] text-gray-500 font-medium uppercase tracking-wider">
+                        <span>Deposit Due</span>
+                        <span>25%</span>
+                      </div>
+                    )}
+                    {type === 'remaining' && (
+                      <div className="flex justify-between items-center text-[9pt] text-gray-500 font-medium uppercase tracking-wider">
+                        <span>Less Paid Balance</span>
+                        <span>-${paidBalance.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center py-2 border-t border-gray-200">
+                      <span className="font-bold font-[12pt] text-gray-900 uppercase tracking-[0.1em]">Total Due</span>
+                      <span className="text-[14pt] font-black text-gray-900">${finalDue.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

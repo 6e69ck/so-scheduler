@@ -20,6 +20,8 @@ export interface IEvent extends mongoose.Document {
   neededPeople: number;
   eventNumber?: number;
   surcharges?: { name: string, value: string }[];
+  billingName?: string;
+  billingPhone?: string;
 }
 
 const EventSchema = new mongoose.Schema<IEvent>({
@@ -30,6 +32,8 @@ const EventSchema = new mongoose.Schema<IEvent>({
   startTime: { type: String, required: true },
   endTime: { type: String, required: true },
   billingAddress: { type: String, default: '' },
+  billingName: { type: String, default: '' },
+  billingPhone: { type: String, default: '' },
   location: { type: String, default: '' },
   notes: { type: String, default: '' },
   status: { type: String, enum: ['None', 'Planning', 'Confirmed', 'Completed'], default: 'None' },
@@ -48,4 +52,8 @@ const EventSchema = new mongoose.Schema<IEvent>({
   toObject: { virtuals: true },
 });
 
-export default mongoose.models.Event || mongoose.model<IEvent>('Event', EventSchema);
+if (mongoose.models.Event) {
+  delete mongoose.models.Event;
+}
+
+export default mongoose.model<IEvent>('Event', EventSchema);

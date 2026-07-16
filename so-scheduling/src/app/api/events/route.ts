@@ -33,6 +33,8 @@ export async function POST(req: Request) {
         body.totalPrice = parentEvent.totalPrice;
         body.salesAssoc = parentEvent.salesAssoc;
         body.billingAddress = parentEvent.billingAddress;
+        body.billingName = parentEvent.billingName;
+        body.billingPhone = parentEvent.billingPhone;
         body.surcharges = parentEvent.surcharges;
       }
     } else {

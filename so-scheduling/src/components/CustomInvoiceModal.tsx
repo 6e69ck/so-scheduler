@@ -13,9 +13,30 @@ interface Props {
 
 export default function CustomInvoiceModal({ event, onClose, onGenerate }: Props) {
   const t = useTranslations('Common');
-  const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([
-    { description: event.show, amount: event.totalPrice }
-  ]);
+  const [lineItems, setLineItems] = useState<InvoiceLineItem[]>(() => {
+    const basePrice = event.totalPrice || 0;
+    const items: InvoiceLineItem[] = [
+      { description: event.show, amount: basePrice }
+    ];
+    if (event.surcharges && Array.isArray(event.surcharges)) {
+      event.surcharges.forEach(s => {
+        const valTrim = (s.value || '').trim();
+        let amt = 0;
+        if (valTrim.endsWith('%')) {
+          const percent = parseFloat(valTrim.slice(0, -1)) || 0;
+          amt = (basePrice * percent) / 100;
+        } else {
+          amt = parseFloat(valTrim) || 0;
+        }
+        const isPercent = valTrim.endsWith('%');
+        items.push({
+          description: `${s.name} Surcharge${isPercent ? ` (${valTrim})` : ''}`,
+          amount: amt
+        });
+      });
+    }
+    return items;
+  });
   const [isGenerating, setIsGenerating] = useState(false);
 
   const addItem = () => {

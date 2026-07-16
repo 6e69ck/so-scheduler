@@ -47,6 +47,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         body.totalPrice = parentEvent.totalPrice;
         body.salesAssoc = parentEvent.salesAssoc;
         body.billingAddress = parentEvent.billingAddress;
+        body.billingName = parentEvent.billingName;
+        body.billingPhone = parentEvent.billingPhone;
         body.surcharges = parentEvent.surcharges;
       }
     }
@@ -68,6 +70,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       salesAssoc: updatedEvent.salesAssoc,
       eventNumber: updatedEvent.eventNumber,
       billingAddress: updatedEvent.billingAddress,
+      billingName: updatedEvent.billingName,
+      billingPhone: updatedEvent.billingPhone,
       surcharges: updatedEvent.surcharges
     };
 
