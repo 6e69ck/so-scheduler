@@ -6,6 +6,7 @@ export interface EventType {
   date: string;
   startTime: string;
   endTime: string;
+  billingAddress?: string;
   location: string;
   notes: string;
   status: 'None' | 'Planning' | 'Confirmed' | 'Completed';

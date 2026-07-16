@@ -16,7 +16,7 @@ import AuthWrapper from '@/components/AuthWrapper';
 
 function AdminDashboard() {
   const t = useTranslations('Common');
-  const [view, setView] = useState<'calendar' | 'spreadsheet' | 'summary' | 'settings'>('calendar');
+  const [view, setView] = useState<'calendar' | 'spreadsheet' | 'summary' | 'settings'>('summary');
   const [events, setEvents] = useState<EventType[]>([]);
   const [transactions, setTransactions] = useState<TransactionType[]>([]);
   const [loading, setLoading] = useState(true);

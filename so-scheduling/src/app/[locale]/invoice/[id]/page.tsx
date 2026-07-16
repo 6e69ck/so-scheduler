@@ -104,6 +104,12 @@ export default async function InvoicePage(props: { params: Promise<{ id: string 
                   {event.clientName}
                 </span>
                 <div className="pt-6 flex flex-col gap-4 text-sm text-gray-600 font-medium">
+                  {event.billingAddress && (
+                    <div>
+                      <strong className="block text-gray-400 text-[10px] uppercase tracking-widest mb-1 font-semibold">Billing Address</strong>
+                      <span className="text-gray-900">{event.billingAddress}</span>
+                    </div>
+                  )}
                   {event.clientPhone && (
                     <div>
                       <strong className="block text-gray-400 text-[10px] uppercase tracking-widest mb-1 font-semibold">Phone</strong>

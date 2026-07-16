@@ -73,13 +73,14 @@ export default function EventModal({ event, events, transactions, initialRange, 
         ...event,
         clientName: event.clientName || '',
         companyName: event.companyName || '',
+        billingAddress: event.billingAddress || '',
       };
     }
     return {
       show: '', clientName: '', companyName: '', date: getInitialDate(),
       startTime: getInitialTime(initialRange?.start, '10:00'),
       endTime: getInitialTime(initialRange?.end, '11:00'),
-      location: '', notes: '', status: 'None', salesAssoc: '', clientPhone: '', clientEmail: '',
+      billingAddress: '', location: '', notes: '', status: 'None', salesAssoc: '', clientPhone: '', clientEmail: '',
       totalPrice: 0, paidBalance: 0, gear: [], staff: [], neededPeople: 0, linkedId: ''
     };
   });
@@ -94,6 +95,7 @@ export default function EventModal({ event, events, transactions, initialRange, 
         ...event,
         clientName: event.clientName || '',
         companyName: event.companyName || '',
+        billingAddress: event.billingAddress || '',
       });
       setTotalPriceStr(event.totalPrice?.toString() || '');
     }
@@ -130,29 +132,37 @@ export default function EventModal({ event, events, transactions, initialRange, 
     }
   };
 
+  const addGearItem = () => {
+    const val = gearInput.trim();
+    if (val && !formData.gear?.includes(val)) {
+      setFormData(prev => ({ ...prev, gear: [...(prev.gear || []), val] }));
+      setGearInput('');
+    }
+  };
+
   const handleGearKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      const val = gearInput.trim();
-      if (val && !formData.gear?.includes(val)) {
-        setFormData({ ...formData, gear: [...(formData.gear || []), val] });
-        setGearInput('');
+      addGearItem();
+    }
+  };
+
+  const addStaffMember = () => {
+    const val = staffInput.trim().toLowerCase();
+    if (val) {
+      if (formData.staff?.includes(val)) {
+        alert("This person is already assigned to this show.");
+        return;
       }
+      setFormData(prev => ({ ...prev, staff: [...(prev.staff || []), val] }));
+      setStaffInput('');
     }
   };
 
   const handleStaffKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      const val = staffInput.trim().toLowerCase();
-      if (val) {
-        if (formData.staff?.includes(val)) {
-          alert("This person is already assigned to this show.");
-          return;
-        }
-        setFormData({ ...formData, staff: [...(formData.staff || []), val] });
-        setStaffInput('');
-      }
+      addStaffMember();
     }
   };
 
@@ -171,6 +181,16 @@ export default function EventModal({ event, events, transactions, initialRange, 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (document.activeElement instanceof HTMLInputElement) {
+      if (document.activeElement.name === 'staffInputTemp') {
+        addStaffMember();
+        return;
+      }
+      if (document.activeElement.name === 'gearInputTemp') {
+        addGearItem();
+        return;
+      }
+    }
     setIsSaving(true);
     const tPrice = evalExpression(totalPriceStr);
     await onSave({ ...formData, totalPrice: tPrice });
@@ -200,16 +220,17 @@ export default function EventModal({ event, events, transactions, initialRange, 
         totalPrice: parent.totalPrice,
         salesAssoc: parent.salesAssoc,
         eventNumber: parent.eventNumber,
+        billingAddress: parent.billingAddress || '',
       }));
       setTotalPriceStr(parent.totalPrice?.toString() || '');
     }
   };
 
   const renderLockedInput = ({ label, name, value, type = 'text', required = false, component: Component = 'input' as any, options = [] }: any) => {
-    const isShared = isLinked && ['clientName', 'companyName', 'clientPhone', 'clientEmail', 'totalPrice', 'salesAssoc'].includes(name);
+    const isShared = isLinked && ['clientName', 'companyName', 'clientPhone', 'clientEmail', 'totalPrice', 'salesAssoc', 'billingAddress'].includes(name);
 
     return (
-      <div className={name === 'show' ? 'md:col-span-2' : ''}>
+      <div className={(name === 'show' || name === 'billingAddress') ? 'md:col-span-2' : ''}>
         <label className="flex items-center gap-1.5 text-sm font-bold text-subtext1 mb-1">
           {label} {required && <span className="text-red-500">*</span>}
           {isShared && <LinkIcon className="w-3 h-3 text-accent" />}
@@ -260,14 +281,14 @@ export default function EventModal({ event, events, transactions, initialRange, 
   };
 
   return (
-    <div className="fixed inset-0 bg-base/95 flex items-center justify-center z-[100] p-4 font-sans">
-      <div className="bg-mantle border border-surface0 rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] flex flex-col overflow-hidden text-text opacity-100">
-        <div className="p-5 border-b border-surface0 flex justify-between items-center bg-mantle shrink-0">
+    <div className="fixed inset-0 bg-base/95 flex items-center justify-center z-[100] p-0 sm:p-4 font-sans">
+      <div className="bg-mantle border-none sm:border sm:border-surface0 rounded-none sm:rounded-xl shadow-2xl w-full max-w-2xl h-full sm:h-auto max-h-screen sm:max-h-[95vh] flex flex-col overflow-hidden text-text opacity-100">
+        <div className="p-3 sm:p-5 border-b border-surface0 flex justify-between items-center bg-mantle shrink-0">
           <h2 className="text-xl font-bold text-text">{event ? t('editDetails') : t('newShow')}</h2>
           <button type="button" onClick={(e) => { e.preventDefault(); setTimeout(onClose, 0); }} disabled={isSaving || isDeleting} className="text-subtext0 hover:text-red-400 text-3xl leading-none transition disabled:opacity-50">&times;</button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-5 flex-1 custom-scrollbar bg-mantle">
+        <form onSubmit={handleSubmit} className="p-3 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5 flex-1 custom-scrollbar bg-mantle">
           {/* Link Section */}
           <div className="bg-surface0/30 border border-surface1 p-3 rounded-xl space-y-3">
             <div className="flex items-center justify-between">
@@ -343,6 +364,8 @@ export default function EventModal({ event, events, transactions, initialRange, 
               </div>
             </div>
 
+            {renderLockedInput({ label: t('billingAddress'), name: "billingAddress", value: formData.billingAddress || '' })}
+
             <div className="md:col-span-2">
               <label className="block text-sm font-bold text-subtext1 mb-1">{t('location')}</label>
               <input name="location" value={formData.location} onChange={handleChange} className="w-full bg-surface0 border border-surface1 text-text rounded-lg p-2.5 focus:ring-1 focus:ring-accent focus:border-accent outline-none transition placeholder:text-surface2 hover:border-surface2" />
@@ -393,7 +416,12 @@ export default function EventModal({ event, events, transactions, initialRange, 
                     {formData.staff?.map((s) => <SortableEquipmentItem key={s} id={s} item={s} onRemove={removeStaff} />)}
                   </SortableContext>
                 </DndContext>
-                <input type="text" value={staffInput} onChange={(e) => setStaffInput(e.target.value)} onKeyDown={handleStaffKeyDown} className="flex-1 bg-transparent border-none outline-none text-text text-sm min-w-[100px] placeholder:text-surface2" />
+                <div className="flex-1 flex items-center gap-1 min-w-[150px]">
+                  <input name="staffInputTemp" type="text" value={staffInput} onChange={(e) => setStaffInput(e.target.value)} onKeyDown={handleStaffKeyDown} className="flex-1 bg-transparent border-none outline-none text-text text-sm placeholder:text-surface2" placeholder="Name..." />
+                  {staffInput.trim() && (
+                    <button type="button" onClick={addStaffMember} className="px-2 py-1 bg-accent text-crust rounded font-bold text-xs hover:bg-accent-hover transition">Add</button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -412,7 +440,12 @@ export default function EventModal({ event, events, transactions, initialRange, 
                     {formData.gear?.map((g) => <SortableEquipmentItem key={g} id={g} item={g} onRemove={removeGear} />)}
                   </SortableContext>
                 </DndContext>
-                <input type="text" value={gearInput} onChange={(e) => setGearInput(e.target.value)} onKeyDown={handleGearKeyDown} className="flex-1 bg-transparent border-none outline-none text-text text-sm min-w-[100px] placeholder:text-surface2" />
+                <div className="flex-1 flex items-center gap-1 min-w-[150px]">
+                  <input name="gearInputTemp" type="text" value={gearInput} onChange={(e) => setGearInput(e.target.value)} onKeyDown={handleGearKeyDown} className="flex-1 bg-transparent border-none outline-none text-text text-sm placeholder:text-surface2" placeholder="Item..." />
+                  {gearInput.trim() && (
+                    <button type="button" onClick={addGearItem} className="px-2 py-1 bg-accent text-crust rounded font-bold text-xs hover:bg-accent-hover transition">Add</button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -422,7 +455,7 @@ export default function EventModal({ event, events, transactions, initialRange, 
             </div>
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row justify-between pt-5 border-t border-surface0 gap-3 sm:gap-0 mt-6 bg-mantle">
+          <div className="flex flex-col-reverse sm:flex-row justify-between pt-3 sm:pt-5 border-t border-surface0 gap-3 sm:gap-0 mt-6 bg-mantle">
             {event && event._id ? (
               <button type="button" disabled={isSaving || isDeleting} onClick={handleDelete} className="w-full sm:w-auto px-5 py-2.5 bg-[#f38ba8]/10 text-[#f38ba8] border border-[#f38ba8]/20 font-bold rounded-lg hover:bg-[#f38ba8]/20 transition disabled:opacity-50">
                 {isDeleting ? t('loading') : t('deleteEvent')}

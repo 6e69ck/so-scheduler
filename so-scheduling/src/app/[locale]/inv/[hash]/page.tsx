@@ -13,12 +13,12 @@ const InvTopDetailHeader = React.memo(({ children }: { children: React.ReactNode
 });
 InvTopDetailHeader.displayName = 'InvTopDetailHeader';
 
-const InvTopDetailItem = React.memo(({ label, value, variant = 'bold' }: { label: string, value: string | React.ReactNode, variant?: 'bold' | 'medium' }) => {
+const InvTopDetailItem = React.memo(({ label, value }: { label: string, value: string | React.ReactNode, variant?: string }) => {
   if (!value) return null;
   return (
     <div className="mb-1">
       <span className="text-[9pt] font-bold text-gray-400 uppercase">{label}</span>
-      <p className={`text-[9pt] ${variant === 'bold' ? 'font-bold text-gray-900' : 'font-medium text-gray-700'}`}>{value}</p>
+      <p className="text-[9pt] font-medium text-gray-700">{value}</p>
     </div>
   );
 });
@@ -136,6 +136,7 @@ export default function InvoicePage() {
                       <div className="space-y-3" style={{ fontSize: '10pt' }}>
                         <InvTopDetailItem label="Company" value={snapshot.companyName} />
                         <InvTopDetailItem label="Client Name" value={snapshot.clientName} />
+                        <InvTopDetailItem label="Billing Address" value={snapshot.billingAddress} />
                         <InvTopDetailItem label="Phone Number" value={formatPhone(snapshot.clientPhone)} variant="medium" />
                         <InvTopDetailItem label="Email Address" value={snapshot.clientEmail} variant="medium" />
                       </div>

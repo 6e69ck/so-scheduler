@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { EventType } from '@/types';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Phone, MapPin, Mail, Users, Package, StickyNote, Plus, X, Link as LinkIcon, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Phone, MapPin, Mail, Users, Package, StickyNote, Plus, X, Link as LinkIcon, Check, Loader2 } from 'lucide-react';
 import moment from 'moment';
 import { useTranslations, useLocale } from 'next-intl';
 
@@ -20,47 +20,16 @@ interface Props {
 export default function SummaryView({ events, selectedDate, setSelectedDate, highlightedEventId, onAddStaff, onRemoveStaff }: Props) {
   const t = useTranslations('Common');
   const locale = useLocale();
-  const [viewType, setViewType] = useState<ViewType>(highlightedEventId ? 'week' : 'month');
+  const [viewType, setViewType] = useState<ViewType>(highlightedEventId ? 'week' : 'day');
   const [addingStaffTo, setAddingStaffTo] = useState<string | null>(null);
   const [staffName, setStaffName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [hasAutoSwitched, setHasAutoSwitched] = useState(false);
   const highlightedRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (highlightedEventId && highlightedRef.current) {
-      highlightedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }, [highlightedEventId]);
-
-  useEffect(() => {
-    if (events.length > 0 && !hasAutoSwitched && !highlightedEventId) {
-      const monthEvents = events.filter(e => {
-        const targetMoment = moment.utc(selectedDate, 'YYYY-MM-DD');
-        const endMoment = targetMoment.clone().add(1, 'month');
-        const eventMoment = moment.utc(e.date);
-        return !eventMoment.isBefore(targetMoment, 'day') && eventMoment.isBefore(endMoment, 'day');
-      });
-      if (monthEvents.length === 0) {
-        setViewType('year');
-      }
-      setHasAutoSwitched(true);
-    } else if (events.length > 0 && !hasAutoSwitched && highlightedEventId) {
-      setHasAutoSwitched(true);
-    }
-  }, [events, selectedDate, hasAutoSwitched, highlightedEventId]);
-
-  const handleCopyLink = (event: EventType) => {
-    const dateStr = moment.utc(event.date).format('YYYY-MM-DD');
-    const url = new URL(window.location.href);
-    url.searchParams.set('date', dateStr);
-    url.searchParams.set('event', event._id!);
-
-    navigator.clipboard.writeText(url.toString());
-    setCopyStatus(event._id!);
-    setTimeout(() => setCopyStatus(null), 2000);
-  };
+  
+  const [visibleCount, setVisibleCount] = useState(5);
+  const observerRef = useRef<HTMLDivElement | null>(null);
 
   const filteredEvents = events.filter(e => {
     const eventDateStr = moment.utc(e.date).format('YYYY-MM-DD');
@@ -68,7 +37,7 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
     const eventMoment = moment.utc(eventDateStr, 'YYYY-MM-DD');
 
     if (viewType === 'day') {
-      return eventDateStr === selectedDate;
+      return !eventMoment.isBefore(targetMoment, 'day');
     } else if (viewType === 'week') {
       return eventMoment.isSame(targetMoment, 'week');
     } else if (viewType === 'month') {
@@ -84,6 +53,72 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
     if (dateA !== dateB) return dateA.localeCompare(dateB);
     return a.startTime.localeCompare(b.startTime);
   });
+
+  useEffect(() => {
+    setVisibleCount(5);
+  }, [viewType, selectedDate]);
+
+  useEffect(() => {
+    if (viewType !== 'day' || visibleCount >= filteredEvents.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => Math.min(prev + 5, filteredEvents.length));
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    const currentObserverRef = observerRef.current;
+    if (currentObserverRef) {
+      observer.observe(currentObserverRef);
+    }
+
+    return () => {
+      if (currentObserverRef) {
+        observer.unobserve(currentObserverRef);
+      }
+    };
+  }, [viewType, filteredEvents.length, visibleCount]);
+
+  useEffect(() => {
+    if (highlightedEventId && highlightedRef.current) {
+      highlightedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlightedEventId]);
+
+  useEffect(() => {
+    if (events.length > 0 && !hasAutoSwitched && !highlightedEventId) {
+      if (viewType === 'month') {
+        const monthEvents = events.filter(e => {
+          const targetMoment = moment.utc(selectedDate, 'YYYY-MM-DD');
+          const endMoment = targetMoment.clone().add(1, 'month');
+          const eventMoment = moment.utc(e.date);
+          return !eventMoment.isBefore(targetMoment, 'day') && eventMoment.isBefore(endMoment, 'day');
+        });
+        if (monthEvents.length === 0) {
+          setViewType('year');
+        }
+      }
+      setHasAutoSwitched(true);
+    } else if (events.length > 0 && !hasAutoSwitched && highlightedEventId) {
+      setHasAutoSwitched(true);
+    }
+  }, [events, selectedDate, hasAutoSwitched, highlightedEventId, viewType]);
+
+  const handleCopyLink = (event: EventType) => {
+    const dateStr = moment.utc(event.date).format('YYYY-MM-DD');
+    const url = new URL(window.location.href);
+    url.searchParams.set('date', dateStr);
+    url.searchParams.set('event', event._id!);
+
+    navigator.clipboard.writeText(url.toString());
+    setCopyStatus(event._id!);
+    setTimeout(() => setCopyStatus(null), 2000);
+  };
+
+
 
   const prevRange = () => {
     const newDate = moment.utc(selectedDate, 'YYYY-MM-DD').subtract(1, viewType).format('YYYY-MM-DD');
@@ -131,7 +166,12 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
 
   const formatRangeLabel = () => {
     const mDate = moment.utc(selectedDate, 'YYYY-MM-DD');
-    if (viewType === 'day') return mDate.format('MMM D, YYYY');
+    if (viewType === 'day') {
+      if (locale === 'zh') {
+        return `自 ${mDate.format('YYYY年M月D日')} 起`;
+      }
+      return `From ${mDate.format('MMM D, YYYY')}`;
+    }
     if (viewType === 'week') {
       const start = moment(mDate).startOf('week');
       const end = moment(mDate).endOf('week');
@@ -184,7 +224,9 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
 
       <div className="flex-1 overflow-auto p-2 sm:p-4 custom-scrollbar bg-[#11111b]/50">
         <div className="grid grid-cols-1 gap-3 sm:gap-6 max-w-5xl mx-auto pb-20">
-          {filteredEvents.map((e, i) => {
+          {(() => {
+            const eventsToRender = viewType === 'day' ? filteredEvents.slice(0, visibleCount) : filteredEvents;
+            return eventsToRender.map((e, i) => {
             const assignedCount = e.staff?.length || 0;
             const neededCount = e.neededPeople || 0;
             const staffColorClass = getStaffColor(assignedCount, neededCount);
@@ -247,6 +289,13 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
                         <p className="font-medium text-[#cdd6f4]">{moment.utc(e.date).format('MMM D')} | {e.startTime} - {e.endTime}</p>
                       </div>
 
+                      {e.billingAddress && (
+                        <div className="flex items-baseline gap-2 text-[#a6adc8]">
+                          <MapPin className="hidden sm:block w-4 h-4 text-[#cba6f7] shrink-0" />
+                          <span className="text-[9px] uppercase font-bold text-[#6c7086] w-10 sm:hidden">{t('billingAddress')}:</span>
+                          <p className="font-medium text-[#cdd6f4] truncate" title={e.billingAddress}>{e.billingAddress}</p>
+                        </div>
+                      )}
                       <div className="flex items-baseline gap-2 text-[#a6adc8]">
                         <MapPin className="hidden sm:block w-4 h-4 text-[#cba6f7] shrink-0" />
                         <span className="text-[9px] uppercase font-bold text-[#6c7086] w-10 sm:hidden">{t('loc')}:</span>
@@ -348,7 +397,13 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
                 </div>
               </div>
             );
-          })}
+          })})()}
+          {/* Intersection Observer target for lazy loading day view */}
+          {viewType === 'day' && visibleCount < filteredEvents.length && (
+            <div ref={observerRef} className="h-10 flex items-center justify-center">
+              <Loader2 className="w-6 h-6 animate-spin text-[#cba6f7]" />
+            </div>
+          )}
           {filteredEvents.length === 0 && (
             <div className="py-20 text-center bg-[#181825] rounded-lg border-2 border-dashed border-[#313244]">
               <p className="text-[#6c7086] font-bold">{t('noShows')}</p>

@@ -92,6 +92,15 @@ export default function ViewEventModal({ event, transactions, onClose, onEdit, o
                 <span className="text-sm font-medium">{moment.utc(event.date).format('MMMM D, YYYY')} | {event.startTime} - {event.endTime}</span>
               </div>
             </div>
+            {event.billingAddress && (
+              <div className="flex items-center gap-3">
+                <MapPin className="w-4 h-4 text-accent" />
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-black text-subtext0">{t('billingAddress')}</span>
+                  <span className="text-sm font-medium">{event.billingAddress}</span>
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-3">
               <MapPin className="w-4 h-4 text-accent" />
               <div className="flex flex-col">

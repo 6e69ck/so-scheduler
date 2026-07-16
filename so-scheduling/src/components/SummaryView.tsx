@@ -149,6 +149,12 @@ export default function SummaryView({ events, transactions, onViewEvent, selecte
                         <CalendarIcon className="w-3.5 h-3.5 text-accent" />
                         <span className="font-medium text-text">{moment.utc(e.date).format('MMM D')} | {e.startTime} - {e.endTime}</span>
                       </div>
+                      {e.billingAddress ? (
+                        <div className="flex items-center gap-1.5 text-subtext1 col-span-2">
+                          <MapPin className="w-3.5 h-3.5 text-accent" />
+                          <span className="truncate max-w-[300px] text-text" title={e.billingAddress}><strong>{t('billingAddress')}:</strong> {e.billingAddress}</span>
+                        </div>
+                      ) : null}
                       <div className="flex items-center gap-1.5 text-subtext1">
                         <MapPin className="w-3.5 h-3.5 text-accent" />
                         <span className="truncate max-w-[150px] text-text" title={e.location}>{e.location || 'N/A'}</span>

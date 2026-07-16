@@ -8,6 +8,7 @@ export interface IEvent extends mongoose.Document {
   startTime: string; // 24h format like 10:00
   endTime: string;   // 24h format like 10:15
   location: string;
+  billingAddress?: string;
   notes: string;
   status: 'None' | 'Planning' | 'Confirmed' | 'Completed';
   salesAssoc: string;
@@ -27,6 +28,7 @@ const EventSchema = new mongoose.Schema<IEvent>({
   date: { type: Date, required: true },
   startTime: { type: String, required: true },
   endTime: { type: String, required: true },
+  billingAddress: { type: String, default: '' },
   location: { type: String, default: '' },
   notes: { type: String, default: '' },
   status: { type: String, enum: ['None', 'Planning', 'Confirmed', 'Completed'], default: 'None' },

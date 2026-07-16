@@ -32,6 +32,7 @@ export async function POST(req: Request) {
         body.clientEmail = parentEvent.clientEmail;
         body.totalPrice = parentEvent.totalPrice;
         body.salesAssoc = parentEvent.salesAssoc;
+        body.billingAddress = parentEvent.billingAddress;
       }
     } else {
       // Auto-increment eventNumber

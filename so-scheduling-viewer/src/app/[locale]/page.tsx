@@ -18,7 +18,7 @@ function HomeContent() {
   const initialDate = searchParams.get('date') || moment.utc().format('YYYY-MM-DD');
   const initialEventId = searchParams.get('event');
 
-  const [view, setView] = useState<'calendar' | 'summary'>(initialEventId ? 'summary' : 'calendar');
+  const [view, setView] = useState<'calendar' | 'summary'>('summary');
   const [events, setEvents] = useState<EventType[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<string>(initialDate);

@@ -46,6 +46,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         body.clientEmail = parentEvent.clientEmail;
         body.totalPrice = parentEvent.totalPrice;
         body.salesAssoc = parentEvent.salesAssoc;
+        body.billingAddress = parentEvent.billingAddress;
       }
     }
 
@@ -64,7 +65,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       clientEmail: updatedEvent.clientEmail,
       totalPrice: updatedEvent.totalPrice,
       salesAssoc: updatedEvent.salesAssoc,
-      eventNumber: updatedEvent.eventNumber
+      eventNumber: updatedEvent.eventNumber,
+      billingAddress: updatedEvent.billingAddress
     };
 
     // Update parent and all children
