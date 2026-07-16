@@ -28,7 +28,7 @@ export async function POST(req: Request) {
       const parentId = event.linkedId || event._id;
       const linkedEvents = await Event.find({
         $or: [{ _id: parentId }, { linkedId: parentId }]
-      }).sort({ date: 1 });
+      } as any).sort({ date: 1 });
       if (linkedEvents.length > 1) {
         (snapshot as any).show = linkedEvents.map((e: any) => e.show).join(', ');
       }
