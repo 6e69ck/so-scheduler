@@ -33,6 +33,23 @@
       "Planning": "Planning",
       "Confirmed": "Confirmed",
       "Completed": "Completed"
-    }
+    },
+    "showName": "Show Name",
+    "clientName": "Client Name",
+    "companyName": "Company Name",
+    "date": "Date",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "location": "Location",
+    "status": "Status",
+    "salesAssoc": "Sales Associate",
+    "clientPhone": "Client Phone",
+    "clientEmail": "Client Email",
+    "totalPrice": "Total Price",
+    "neededPeople": "Needed People",
+    "staffing": "Staffing",
+    "cancel": "Cancel",
+    "saveChanges": "Save Changes",
+    "newShow": "New Show"
   }
 }

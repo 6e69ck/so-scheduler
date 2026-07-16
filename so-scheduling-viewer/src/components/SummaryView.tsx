@@ -20,7 +20,7 @@ interface Props {
 export default function SummaryView({ events, selectedDate, setSelectedDate, highlightedEventId, onAddStaff, onRemoveStaff }: Props) {
   const t = useTranslations('Common');
   const locale = useLocale();
-  const [viewType, setViewType] = useState<ViewType>(highlightedEventId ? 'week' : 'day');
+  const [viewType, setViewType] = useState<ViewType>('day');
   const [addingStaffTo, setAddingStaffTo] = useState<string | null>(null);
   const [staffName, setStaffName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,10 +83,19 @@ export default function SummaryView({ events, selectedDate, setSelectedDate, hig
   }, [viewType, filteredEvents.length, visibleCount]);
 
   useEffect(() => {
+    if (highlightedEventId) {
+      const idx = filteredEvents.findIndex(e => e._id === highlightedEventId);
+      if (idx !== -1 && visibleCount < idx + 5) {
+        setVisibleCount(idx + 5);
+      }
+    }
+  }, [highlightedEventId, filteredEvents, visibleCount]);
+
+  useEffect(() => {
     if (highlightedEventId && highlightedRef.current) {
       highlightedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, [highlightedEventId]);
+  }, [highlightedEventId, visibleCount]);
 
   useEffect(() => {
     if (events.length > 0 && !hasAutoSwitched && !highlightedEventId) {

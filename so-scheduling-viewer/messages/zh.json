@@ -33,6 +33,23 @@
       "Planning": "计划中",
       "Confirmed": "已确认",
       "Completed": "已完成"
-    }
+    },
+    "showName": "演出名称",
+    "clientName": "客户姓名",
+    "companyName": "公司名称",
+    "date": "日期",
+    "startTime": "开始时间",
+    "endTime": "结束时间",
+    "location": "地点",
+    "status": "状态",
+    "salesAssoc": "销售人员",
+    "clientPhone": "客户电话",
+    "clientEmail": "客户邮箱",
+    "totalPrice": "合同金额 / 总价",
+    "neededPeople": "所需人数",
+    "staffing": "人员安排",
+    "cancel": "取消",
+    "saveChanges": "保存修改",
+    "newShow": "新建演出"
   }
 }

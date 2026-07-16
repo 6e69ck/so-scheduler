@@ -22,8 +22,7 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
   const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);
   const [expandedEventIds, setExpandedEventIds] = useState<Set<string>>(new Set());
 
-  const [activeMenu, setActiveMenu] = useState<{ id: string, type: 'event' | 'transaction', x: number, y: number, data: any } | null>(null);
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+
 
   // Form State
   const [amountInput, setAmountInput] = useState('');
@@ -150,7 +149,6 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
     setReceiptUrl(tr.receiptUrl || '');
     setAddingToEventId(null);
     setIsAddingStandalone(false);
-    setActiveMenu(null);
   };
 
   const resetForm = () => {
@@ -186,19 +184,7 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
     return `${sign}$${absVal}`;
   };
 
-  const handleTouchStart = (e: React.TouchEvent, id: string, type: 'event' | 'transaction', data: any) => {
-    const touch = e.touches[0];
-    const x = touch.clientX;
-    const y = touch.clientY;
-    longPressTimer.current = setTimeout(() => {
-      setActiveMenu({ id, type, x, y, data });
-      if (navigator.vibrate) navigator.vibrate(50);
-    }, 500);
-  };
 
-  const handleTouchEnd = () => {
-    if (longPressTimer.current) clearTimeout(longPressTimer.current);
-  };
 
   // Group events by linked relationship
   const eventGroups = new Map<string, EventType[]>();
@@ -252,11 +238,11 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
   const intentOptions: TransactionIntent[] = ['payment', 'tip', 'fee', 'reimbursement'];
 
   return (
-    <div className="bg-base rounded-lg shadow-sm border border-surface0 overflow-hidden h-full w-full text-text flex flex-col font-sans relative" onClick={() => setActiveMenu(null)}>
+    <div className="bg-base rounded-lg shadow-sm border border-surface0 overflow-hidden h-full w-full text-text flex flex-col font-sans relative">
       <div className="px-4 py-2 border-b border-surface0 bg-mantle flex justify-between items-center shrink-0">
         <div className="flex items-center gap-2">
           <Wallet className="w-4 h-4 text-accent" />
-          <h2 className="font-bold text-sm uppercase tracking-widest">{t('ledger')}</h2>
+          <h2 className="font-bold text-sm uppercase tracking-widest">{t('transactions')}</h2>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -275,94 +261,6 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar overflow-x-hidden">
-        {(isAddingStandalone || addingToEventId || editingTransactionId) && (
-          <div className="p-3 bg-mantle border-b border-surface0 animate-in fade-in slide-in-from-top-1 duration-200 sticky top-0 z-30 shadow-lg">
-            <div className="max-w-5xl mx-auto bg-base border border-accent/20 p-3 rounded-xl shadow-2xl space-y-3">
-              <div className="flex justify-between items-center">
-                <h3 className="font-black uppercase tracking-widest text-[10px] text-accent flex items-center gap-1.5">
-                  {editingTransactionId ? <Edit2 className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-                  {editingTransactionId ? 'Amend' : (addingToEventId ? `Add to Event` : 'General')}
-                </h3>
-                <div
-                  className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border shadow-sm transition-all duration-300"
-                  style={{
-                    backgroundColor: (['payment', 'tip'].includes(intent)) ? 'rgba(166, 227, 161, 0.1)' : 'rgba(243, 139, 168, 0.1)',
-                    color: (['payment', 'tip'].includes(intent)) ? '#a6e3a1' : '#f38ba8',
-                    borderColor: (['payment', 'tip'].includes(intent)) ? 'rgba(166, 227, 161, 0.3)' : 'rgba(243, 139, 168, 0.3)',
-                  }}
-                >
-                  {(['payment', 'tip'].includes(intent)) ? 'Revenue Entry' : 'Expense Entry'}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
-                <div className="col-span-1">
-                  <label className="block text-[8px] font-black uppercase text-subtext0 mb-0.5 ml-1">Amount</label>
-                  <div className="relative">
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-subtext0 font-bold text-xs">$</span>
-                    <input
-                      disabled={isSaving}
-                      autoFocus
-                      type="text"
-                      value={amountInput}
-                      onChange={(e) => setAmountInput(e.target.value)}
-                      onBlur={() => {
-                        const num = evalExpression(amountInput);
-                        // If result is 0 and input wasn't literally '0' or expressions like '0+0', clear it.
-                        // This removes generic text like "abc".
-                        if (num === 0 && !/^0([+\-*/()]0)*$/.test(amountInput.replace(/\s/g, ''))) {
-                          setAmountInput('');
-                        } else {
-                          setAmountInput(num.toString());
-                        }
-                      }}
-                      className="w-full bg-mantle border border-surface1 rounded-lg py-1.5 px-2 pl-5 text-xs font-bold text-text focus:ring-1 focus:ring-accent outline-none disabled:opacity-50"
-                      placeholder="Enter amount"
-                    />
-                  </div>
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-[8px] font-black uppercase text-subtext0 mb-0.5 ml-1">Type</label>
-                  <select disabled={isSaving} value={intent} onChange={(e) => setIntent(e.target.value as any)} className="w-full bg-mantle border border-surface1 rounded-lg py-1.5 px-2 text-[10px] font-bold text-text focus:ring-1 focus:ring-accent outline-none disabled:opacity-50">
-                    {intentOptions.map(opt => <option key={opt} value={opt}>{t(`intents.${opt}`)}</option>)}
-                  </select>
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-[8px] font-black uppercase text-subtext0 mb-0.5 ml-1">Method</label>
-                  <select disabled={isSaving} value={type} onChange={(e) => setType(e.target.value as any)} className="w-full bg-mantle border border-surface1 rounded-lg py-1.5 px-2 text-[10px] font-bold text-text focus:ring-1 focus:ring-accent outline-none disabled:opacity-50">
-                    <option value="e-transfer">{t('eTransfer')}</option>
-                    <option value="cash">{t('cash')}</option>
-                    <option value="cheque">{t('cheque')}</option>
-                    <option value="credit">{t('credit')}</option>
-                  </select>
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-[8px] font-black uppercase text-subtext0 mb-0.5 ml-1">Date</label>
-                  <input disabled={isSaving} type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full bg-mantle border border-surface1 rounded-lg py-1 px-2 text-[10px] font-bold text-text focus:ring-1 focus:ring-accent outline-none [color-scheme:dark] disabled:opacity-50" />
-                </div>
-                <div className="col-span-2 md:col-span-1">
-                  <label className="block text-[8px] font-black uppercase text-subtext0 mb-0.5 ml-1">Description <span className="text-red-500">*</span></label>
-                  <input required disabled={isSaving} type="text" value={notes} onChange={(e) => setNotes(e.target.value)} className={`w-full bg-mantle border rounded-lg py-1.5 px-2 text-[10px] font-medium text-text focus:ring-1 outline-none disabled:opacity-50 ${!notes.trim() ? 'border-red-500/50 focus:ring-red-500' : 'border-surface1 focus:ring-accent'}`} placeholder="Required..." />
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-[8px] font-black uppercase text-subtext0 mb-0.5 ml-1">Receipt</label>
-                  <label className={`flex items-center justify-center gap-2 w-full h-[29px] bg-mantle border border-dashed border-surface1 rounded-lg cursor-pointer hover:bg-surface0 transition overflow-hidden ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                    {receiptUrl ? <img src={receiptUrl} alt="Receipt" className="w-full h-full object-cover" /> : <ImageIcon className="w-3 h-3 text-subtext0" />}
-                    <input disabled={isSaving} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <button disabled={isSaving} onClick={resetForm} className="px-3 py-1.5 bg-surface0 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-surface1 disabled:opacity-50">Cancel</button>
-                <button disabled={isSaving || !notes.trim()} onClick={handleSaveTransaction} className="px-4 py-1.5 bg-accent text-crust rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-accent-hover transition flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
-                  {isSaving ? <><Loader2 className="w-3 h-3 animate-spin" /> Saving...</> : (editingTransactionId ? <><Check className="w-3 h-3" /> Update</> : 'Save')}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         <table className="min-w-full text-left text-xs border-collapse table-fixed">
           <thead className="uppercase tracking-wider bg-crust text-subtext0 font-black sticky top-0 z-10 border-b border-surface0">
             <tr>
@@ -376,7 +274,7 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
               <th className="hidden sm:table-cell w-20 px-4 py-3 text-center">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-surface0">
+          <tbody className="divide-y divide-surface1">
             {allNodes.map((node) => {
               const isExpanded = expandedEventIds.has(node.id);
               const gross = node.revenue - node.expense;
@@ -384,47 +282,54 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
                 <React.Fragment key={node.id}>
                   {/* Parent Row */}
                   <tr
-                    className={`hover:bg-surface0/30 transition-colors group ${node.source === 'event' ? 'font-bold bg-mantle/30 border-l-2 border-accent/20' : 'border-l-2 border-transparent'}`}
-                    onTouchStart={(e) => handleTouchStart(e, node.id, node.source, node.data)}
-                    onTouchEnd={handleTouchEnd}
-                    onContextMenu={(e) => { e.preventDefault(); setActiveMenu({ id: node.id, type: node.source, x: e.clientX, y: e.clientY, data: node.data }); }}
+                    className={`hover:bg-surface0/30 transition-colors group cursor-pointer ${node.source === 'event' ? 'font-bold bg-mantle/30 border-l-2 border-accent/20' : 'border-l-2 border-transparent'}`}
+                    onClick={() => {
+                      if (node.source === 'event') {
+                        resetForm();
+                        setAddingToEventId(node.id);
+                        setIntent('payment');
+                        setDate(node.date);
+                      } else {
+                        startEditTransaction(node.data as TransactionType);
+                      }
+                    }}
                   >
-                    <td className="px-1 py-3 text-center">
+                    <td className="px-1 py-3 text-center border-b border-surface1">
                       {node.source === 'event' && (
                         <button onClick={(e) => { e.stopPropagation(); toggleExpand(node.id); }} className="p-0.5 hover:bg-surface1 rounded text-subtext0">
                           {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                         </button>
                       )}
                     </td>
-                    <td className="px-1 py-3 font-mono text-[10px] text-subtext1 whitespace-nowrap">{node.date}</td>
-                    <td className="px-2 py-3 truncate">
+                    <td className="px-1 py-3 font-mono text-[10px] text-subtext1 whitespace-nowrap border-b border-surface1">{node.date}</td>
+                    <td className="px-2 py-3 truncate border-b border-surface1">
                       <div className="flex flex-col min-w-0">
                         <span className="truncate">{node.title}</span>
                         <span className="text-[8px] text-subtext0 font-normal uppercase tracking-tighter truncate">{node.subtitle}</span>
                       </div>
                     </td>
-                    <td className={`px-2 py-3 text-right font-bold text-[10px] sm:text-xs ${node.revenue > 0 ? 'text-green bg-green/5' : 'text-subtext0 opacity-30'}`}>
+                    <td className={`px-2 py-3 text-right font-bold text-[10px] sm:text-xs border-b border-surface1 ${node.revenue > 0 ? 'text-green bg-green/5' : 'text-subtext0 opacity-30'}`}>
                       {node.revenue !== 0 ? formatAmount(node.revenue, '+') : '-'}
                     </td>
-                    <td className={`px-2 py-3 text-right font-bold text-[10px] sm:text-xs ${node.expense > 0 ? 'text-red bg-red/5' : 'text-subtext0 opacity-30'}`}>
+                    <td className={`px-2 py-3 text-right font-bold text-[10px] sm:text-xs border-b border-surface1 ${node.expense > 0 ? 'text-red bg-red/5' : 'text-subtext0 opacity-30'}`}>
                       {node.expense !== 0 ? formatAmount(node.expense, '-') : '-'}
                     </td>
-                    <td className={`px-2 py-3 text-right font-bold text-[10px] sm:text-xs ${gross > 0 ? 'text-blue' : (gross < 0 ? 'text-mauve' : 'text-subtext0 opacity-30')}`}>
+                    <td className={`px-2 py-3 text-right font-bold text-[10px] sm:text-xs border-b border-surface1 ${gross > 0 ? 'text-blue' : (gross < 0 ? 'text-mauve' : 'text-subtext0 opacity-30')}`}>
                       {gross > 0 ? `$${gross.toFixed(2)}` : (gross < 0 ? `-$${Math.abs(gross).toFixed(2)}` : '-')}
                     </td>
-                    <td className="hidden sm:table-cell px-4 py-3 text-center">
+                    <td className="hidden sm:table-cell px-4 py-3 text-center border-b border-surface1">
                       {node.source === 'event' ? <span className="text-[8px] text-overlay0 font-bold uppercase tracking-widest border border-overlay0/20 px-1 rounded">SHOW</span> : (
                         <span className="text-[8px] uppercase font-bold text-subtext0 border border-surface1 px-1 rounded">
                           {t((node.data as TransactionType).type === 'e-transfer' ? 'eTransfer' : (node.data as TransactionType).type)}
                         </span>
                       )}
                     </td>
-                    <td className="hidden sm:table-cell px-4 py-3 text-center">
+                    <td className="hidden sm:table-cell px-4 py-3 text-center border-b border-surface1">
                       <div className="flex items-center justify-center gap-0.5">
                         {node.source === 'event' ? (
                           <>
+                            <button onClick={(e) => { e.stopPropagation(); onEditEvent(node.data as EventType); }} className="p-1.5 hover:bg-accent/10 text-accent rounded transition" title="Edit Show"><Edit2 className="w-3.5 h-3.5" /></button>
                             <button onClick={(e) => { e.stopPropagation(); resetForm(); setAddingToEventId(node.id); setIntent('payment'); setDate(node.date); }} className="p-1.5 hover:bg-green/10 text-green rounded transition" title="Add Payment"><Plus className="w-3.5 h-3.5" /></button>
-                            <button onClick={(e) => { e.stopPropagation(); onEditEvent(node.data as EventType); }} className="p-1.5 hover:bg-accent/10 text-accent rounded transition"><Edit2 className="w-3.5 h-3.5" /></button>
                           </>
                         ) : (
                           <>
@@ -439,16 +344,14 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
                   {isExpanded && node.children.map((child) => (
                     <tr
                       key={child._id}
-                      className="bg-crust/40 border-l-2 border-accent/10 hover:bg-surface0/20 transition-colors group/child"
-                      onTouchStart={(e) => handleTouchStart(e, child._id!, 'transaction', child)}
-                      onTouchEnd={handleTouchEnd}
-                      onContextMenu={(e) => { e.preventDefault(); setActiveMenu({ id: child._id!, type: 'transaction', x: e.clientX, y: e.clientY, data: child }); }}
+                      className="bg-crust/40 border-l-2 border-accent/10 hover:bg-surface0/20 transition-colors group/child cursor-pointer"
+                      onClick={() => startEditTransaction(child)}
                     >
-                      <td className="px-1 py-3 text-center relative">
+                      <td className="px-1 py-3 text-center relative border-b border-surface1/30">
                         <div className="absolute left-1/2 top-0 bottom-0 w-px bg-accent/10 -translate-x-1/2" />
                       </td>
-                      <td className="px-1 py-2 font-mono text-subtext0 text-[9px] pl-2 whitespace-nowrap">{moment.utc(child.date).format('MM-DD')}</td>
-                      <td className="px-2 py-2 truncate">
+                      <td className="px-1 py-2 font-mono text-subtext0 text-[9px] pl-2 whitespace-nowrap border-b border-surface1/30">{moment.utc(child.date).format('MM-DD')}</td>
+                      <td className="px-2 py-2 truncate border-b border-surface1/30">
                         <div className="flex flex-col min-w-0">
                           <span className="text-subtext1 italic text-[9px] truncate block">
                             {child.notes || t(`intents.${child.intent || 'payment'}`)}
@@ -456,21 +359,25 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
                           <span className="text-[7px] uppercase font-black tracking-widest text-subtext0 opacity-50">{t(`accounts.${child.account || 'Bank'}`)}</span>
                         </div>
                       </td>
-                      <td className={`px-2 py-2 text-right text-[9px] font-bold ${child.category === 'revenue' ? (child.amount >= 0 ? 'text-green/70' : 'text-red/70') : 'text-subtext0 opacity-10'}`}>
+                      <td className={`px-2 py-2 text-right text-[9px] font-bold border-b border-surface1/30 ${child.category === 'revenue' ? (child.amount >= 0 ? 'text-green/70' : 'text-red/70') : 'text-subtext0 opacity-10'}`}>
                         {child.category === 'revenue' ? formatAmount(child.amount, '+') : '-'}
                       </td>
-                      <td className={`px-2 py-2 text-right text-[9px] font-bold ${child.category === 'reimbursement' ? (child.amount >= 0 ? 'text-red/70' : 'text-green/70') : 'text-subtext0 opacity-10'}`}>
+                      <td className={`px-2 py-2 text-right text-[9px] font-bold border-b border-surface1/30 ${child.category === 'reimbursement' ? (child.amount >= 0 ? 'text-red/70' : 'text-green/70') : 'text-subtext0 opacity-10'}`}>
                         {child.category === 'reimbursement' ? formatAmount(child.amount, '-') : '-'}
                       </td>
-                      <td className="px-2 py-2 text-right"></td>
-                      <td className="hidden sm:table-cell px-4 py-2 text-center">
+                      <td className="px-2 py-2 text-right border-b border-surface1/30"></td>
+                      <td className="hidden sm:table-cell px-4 py-2 text-center border-b border-surface1/30">
                         <span className="text-[8px] uppercase font-bold text-subtext0 border border-surface1 px-1 rounded">{t(child.type === 'e-transfer' ? 'eTransfer' : child.type)}</span>
                       </td>
-                      <td className="hidden sm:table-cell px-4 py-2 text-center">
+                      <td className="hidden sm:table-cell px-4 py-2 text-center border-b border-surface1/30">
                         <div className="flex items-center justify-center gap-1">
-                          <button onClick={() => startEditTransaction(child)} className="p-1 text-subtext0 hover:text-accent transition opacity-0 group-hover/child:opacity-100"><Edit2 className="w-3 h-3" /></button>
-                          {child.receiptUrl && <button onClick={() => window.open(child.receiptUrl, '_blank')} className="p-1 text-subtext0 hover:text-accent transition"><ImageIcon className="w-3 h-3" /></button>}
-                          <button onClick={() => deleteTransaction(child._id!)} className="p-1 text-subtext0 hover:text-red transition opacity-0 group-hover/child:opacity-100"><Trash2 className="w-3 h-3" /></button>
+                          <button onClick={() => startEditTransaction(child)} className="p-1 text-subtext0 hover:text-accent transition" title="Edit Transaction"><Edit2 className="w-3.5 h-3.5" /></button>
+                          {child.receiptUrl ? (
+                            <button onClick={() => window.open(child.receiptUrl, '_blank')} className="p-1 text-subtext0 hover:text-accent transition" title="View Receipt"><ImageIcon className="w-3.5 h-3.5" /></button>
+                          ) : (
+                            <div className="w-[22px]" />
+                          )}
+                          <button onClick={() => deleteTransaction(child._id!)} className="p-1 text-subtext0 hover:text-red transition opacity-0 group-hover/child:opacity-100" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
                       </td>
                     </tr>
@@ -482,32 +389,218 @@ export default function LedgerView({ events, onEditEvent, onViewEvent, onSaveEve
         </table>
       </div>
 
-      {activeMenu && (
-        <div
-          className="fixed z-[200] bg-mantle border border-surface1 rounded-lg shadow-2xl p-1 animate-in zoom-in duration-100 min-w-[120px]"
-          style={{ top: Math.min(activeMenu.y, window.innerHeight - 100), left: Math.min(activeMenu.x, window.innerWidth - 130) }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex flex-col gap-0.5">
-            {activeMenu.type === 'event' ? (
-              <>
-                <button onClick={() => { resetForm(); setAddingToEventId(activeMenu.id); setIntent('payment'); setDate(moment.utc(activeMenu.data.date).format('YYYY-MM-DD')); setActiveMenu(null); }} className="flex items-center gap-2 w-full px-3 py-2 hover:bg-surface0 rounded-md text-[10px] font-bold text-green">
-                  <Plus className="w-3 h-3" /> Add Payment
+      {/* Transaction Modal */}
+      {(isAddingStandalone || addingToEventId || editingTransactionId) && (
+        <div className="fixed inset-0 bg-base/90 flex items-center justify-center z-[150] p-4 font-sans animate-in fade-in duration-200">
+          <div className="bg-mantle border border-surface0 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden text-text flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-surface0 flex justify-between items-center bg-mantle shrink-0">
+              <div>
+                <h2 className="text-sm font-bold uppercase tracking-widest text-accent flex items-center gap-1.5">
+                  {editingTransactionId ? <Edit2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  {editingTransactionId ? 'Edit Transaction' : 'Add Transaction'}
+                </h2>
+                {addingToEventId && (
+                  <p className="text-[10px] text-subtext0 font-semibold mt-1">
+                    For Show: <span className="text-text">{events.find(e => e.linkedId === addingToEventId || e._id === addingToEventId)?.show || 'Selected Event'}</span>
+                  </p>
+                )}
+                {!addingToEventId && !editingTransactionId && (
+                  <p className="text-[10px] text-subtext0 font-semibold mt-1">General Transaction</p>
+                )}
+                {editingTransactionId && (
+                  <p className="text-[10px] text-subtext0 font-semibold mt-1">
+                    {(() => {
+                      const tr = standaloneTransactions.find(t => t._id === editingTransactionId);
+                      if (tr?.eventId) {
+                        const eventName = events.find(e => e.linkedId === tr.eventId || e._id === tr.eventId)?.show;
+                        return eventName ? `For Show: ${eventName}` : 'Associated Show';
+                      }
+                      return 'General Transaction';
+                    })()}
+                  </p>
+                )}
+              </div>
+              <button onClick={resetForm} className="text-subtext0 hover:text-red-400 transition text-2xl">&times;</button>
+            </div>
+
+            <div className="p-5 overflow-y-auto flex-1 custom-scrollbar space-y-4">
+              {/* Category Selector (Revenue / Expense) */}
+              <div className="flex bg-crust rounded-xl p-1 border border-surface0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIntent('payment');
+                  }}
+                  className={`flex-1 py-2 text-center rounded-lg text-xs font-bold transition-all ${
+                    ['payment', 'tip'].includes(intent)
+                      ? 'bg-green/10 text-green border border-green/20'
+                      : 'text-subtext0 hover:text-text'
+                  }`}
+                >
+                  Revenue (Entry)
                 </button>
-                <button onClick={() => { onEditEvent(activeMenu.data); setActiveMenu(null); }} className="flex items-center gap-2 w-full px-3 py-2 hover:bg-surface0 rounded-md text-[10px] font-bold text-accent">
-                  <Edit2 className="w-3 h-3" /> Edit Show
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIntent('reimbursement');
+                  }}
+                  className={`flex-1 py-2 text-center rounded-lg text-xs font-bold transition-all ${
+                    ['reimbursement', 'fee'].includes(intent)
+                      ? 'bg-red/10 text-red border border-red/20'
+                      : 'text-subtext0 hover:text-text'
+                  }`}
+                >
+                  Expense (Expense)
                 </button>
-              </>
-            ) : (
-              <>
-                <button onClick={() => startEditTransaction(activeMenu.data)} className="flex items-center gap-2 w-full px-3 py-2 hover:bg-surface0 rounded-md text-[10px] font-bold text-accent">
-                  <Edit2 className="w-3 h-3" /> Amend
+              </div>
+
+              {/* Form Fields */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-xs font-bold text-subtext1 mb-1">Amount</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-subtext0 font-bold text-sm">$</span>
+                    <input
+                      disabled={isSaving}
+                      autoFocus
+                      type="text"
+                      value={amountInput}
+                      onChange={(e) => setAmountInput(e.target.value)}
+                      onBlur={() => {
+                        const num = evalExpression(amountInput);
+                        if (num === 0 && !/^0([+\-*/()]0)*$/.test(amountInput.replace(/\s/g, ''))) {
+                          setAmountInput('');
+                        } else {
+                          setAmountInput(num.toString());
+                        }
+                      }}
+                      className="w-full bg-surface0 border border-surface1 text-text rounded-lg p-2.5 pl-7 text-sm font-bold focus:ring-1 focus:ring-accent outline-none hover:border-surface2"
+                      placeholder="Amount"
+                    />
+                  </div>
+                </div>
+
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-xs font-bold text-subtext1 mb-1">Transaction Category</label>
+                  <select
+                    disabled={isSaving}
+                    value={intent}
+                    onChange={(e) => setIntent(e.target.value as any)}
+                    className="w-full bg-surface0 border border-surface1 text-text rounded-lg p-2.5 text-xs font-bold focus:ring-1 focus:ring-accent outline-none hover:border-surface2"
+                  >
+                    {['payment', 'tip'].includes(intent) ? (
+                      <>
+                        <option value="payment">Payment</option>
+                        <option value="tip">Tip</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="reimbursement">Reimbursement</option>
+                        <option value="fee">Fee</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-xs font-bold text-subtext1 mb-1">Payment Method</label>
+                  <select
+                    disabled={isSaving}
+                    value={type}
+                    onChange={(e) => setType(e.target.value as any)}
+                    className="w-full bg-surface0 border border-surface1 text-text rounded-lg p-2.5 text-xs font-bold focus:ring-1 focus:ring-accent outline-none hover:border-surface2"
+                  >
+                    <option value="e-transfer">{t('eTransfer')}</option>
+                    <option value="cash">{t('cash')}</option>
+                    <option value="cheque">{t('cheque')}</option>
+                    <option value="credit">{t('credit')}</option>
+                  </select>
+                </div>
+
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-xs font-bold text-subtext1 mb-1">Date</label>
+                  <input
+                    disabled={isSaving}
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full bg-surface0 border border-surface1 text-text rounded-lg p-2 text-xs font-bold focus:ring-1 focus:ring-accent outline-none [color-scheme:dark] hover:border-surface2"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold text-subtext1 mb-1">Description <span className="text-red-500">*</span></label>
+                  <input
+                    required
+                    disabled={isSaving}
+                    type="text"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className={`w-full bg-surface0 border text-text rounded-lg p-2.5 text-xs font-medium focus:ring-1 outline-none hover:border-surface2 ${
+                      !notes.trim() ? 'border-red-500/50 focus:ring-red-500' : 'border-surface1 focus:ring-accent'
+                    }`}
+                    placeholder="Description notes..."
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold text-subtext1 mb-1">Receipt Attachment</label>
+                  <label className="flex items-center justify-center gap-2 w-full h-[60px] bg-surface0 border border-dashed border-surface1 rounded-xl cursor-pointer hover:bg-surface1 transition overflow-hidden">
+                    {receiptUrl ? (
+                      <img src={receiptUrl} alt="Receipt" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex flex-col items-center gap-1 text-subtext0">
+                        <ImageIcon className="w-4 h-4" />
+                        <span className="text-[9px] uppercase tracking-wider font-bold">Upload image</span>
+                      </div>
+                    )}
+                    <input disabled={isSaving} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-surface0 bg-mantle flex justify-between items-center shrink-0">
+              {editingTransactionId ? (
+                <button
+                  type="button"
+                  disabled={isSaving}
+                  onClick={() => {
+                    if (confirm('Are you sure you want to delete this transaction?')) {
+                      deleteTransaction(editingTransactionId);
+                      resetForm();
+                    }
+                  }}
+                  className="px-4 py-2 bg-red/10 text-red hover:bg-red/20 rounded-xl text-xs font-bold uppercase tracking-widest transition"
+                >
+                  Delete
                 </button>
-                <button onClick={() => { deleteTransaction(activeMenu.id); setActiveMenu(null); }} className="flex items-center gap-2 w-full px-3 py-2 hover:bg-surface0 rounded-md text-[10px] font-bold text-red">
-                  <Trash2 className="w-3 h-3" /> Delete
+              ) : (
+                <div />
+              )}
+              <div className="flex gap-3">
+                <button
+                  disabled={isSaving}
+                  onClick={resetForm}
+                  className="px-4 py-2 bg-surface0 hover:bg-surface1 rounded-xl text-xs font-bold uppercase tracking-widest transition"
+                >
+                  Cancel
                 </button>
-              </>
-            )}
+                <button
+                  disabled={isSaving || !notes.trim()}
+                  onClick={handleSaveTransaction}
+                  className="px-5 py-2 bg-accent text-crust hover:bg-accent-hover rounded-xl text-xs font-bold uppercase tracking-widest transition flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    'Save'
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

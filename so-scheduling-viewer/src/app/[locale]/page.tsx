@@ -15,7 +15,15 @@ function HomeContent() {
   const t = useTranslations('Common');
   const searchParams = useSearchParams();
 
-  const initialDate = searchParams.get('date') || moment.utc().format('YYYY-MM-DD');
+  const initialDateParam = searchParams.get('date');
+  const todayStr = moment.utc().format('YYYY-MM-DD');
+  let initialDate = todayStr;
+  if (initialDateParam) {
+    const isPast = moment.utc(initialDateParam, 'YYYY-MM-DD').isBefore(moment.utc().startOf('day'));
+    if (isPast) {
+      initialDate = initialDateParam;
+    }
+  }
   const initialEventId = searchParams.get('event');
 
   const [view, setView] = useState<'calendar' | 'summary'>('summary');
@@ -48,11 +56,37 @@ function HomeContent() {
   useEffect(() => {
     if (highlightedEventId && events.length > 0) {
       const target = events.find(e => e._id === highlightedEventId);
-      if (target && target.status === 'Planning') {
-        setShowPending(true);
+      if (target) {
+        if (target.status === 'Planning') {
+          setShowPending(true);
+        }
+        const eventDateStr = moment.utc(target.date).format('YYYY-MM-DD');
+        if (moment.utc(eventDateStr).isBefore(moment.utc(selectedDate, 'YYYY-MM-DD'), 'day')) {
+          setSelectedDate(eventDateStr);
+        }
       }
     }
-  }, [highlightedEventId, events]);
+  }, [highlightedEventId, events, selectedDate]);
+
+  useEffect(() => {
+    if (!highlightedEventId) return;
+
+    const handleGlobalClick = () => {
+      setHighlightedEventId(null);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('event');
+      window.history.replaceState({}, '', url.toString());
+    };
+
+    const timer = setTimeout(() => {
+      window.addEventListener('click', handleGlobalClick);
+    }, 50);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('click', handleGlobalClick);
+    };
+  }, [highlightedEventId]);
 
   const handleEventClick = (event: EventType) => {
     const dateStr = moment.utc(event.date).format('YYYY-MM-DD');

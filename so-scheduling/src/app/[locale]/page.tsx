@@ -241,7 +241,7 @@ function AdminDashboard() {
               className={`relative z-10 flex items-center px-4 py-2 rounded-lg text-xs font-bold transition-all duration-300 ${view === 'spreadsheet' ? 'text-crust' : 'text-subtext0 hover:text-text hover:bg-surface0/50'}`}
             >
               <LayoutGrid className="w-4 h-4 mr-2" />
-              {t('list')}
+              {t('transactions')}
             </button>
             <button
               onClick={() => setView('settings')}
@@ -283,8 +283,8 @@ function AdminDashboard() {
               onClick={() => { setView('spreadsheet'); setIsMenuOpen(false); }}
               className={`flex items-center w-full px-4 py-3 rounded-xl text-sm font-bold transition-all ${view === 'spreadsheet' ? 'bg-accent text-crust' : 'text-subtext0 bg-crust border border-surface0'}`}
             >
-              <Calendar className="w-5 h-5 mr-3" />
-              {t('list')}
+              <LayoutGrid className="w-5 h-5 mr-3" />
+              {t('transactions')}
             </button>
             <button
               onClick={() => { setView('settings'); setIsMenuOpen(false); }}
