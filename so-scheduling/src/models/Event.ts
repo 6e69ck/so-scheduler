@@ -20,6 +20,7 @@ export interface IEvent extends mongoose.Document {
   neededPeople: number;
   eventNumber?: number;
   linkedId?: string;
+  surcharges?: { name: string, value: string }[];
 }
 
 const EventSchema = new mongoose.Schema<IEvent>({
@@ -42,6 +43,7 @@ const EventSchema = new mongoose.Schema<IEvent>({
   neededPeople: { type: Number, default: 0 },
   eventNumber: { type: Number },
   linkedId: { type: String, default: null },
+  surcharges: { type: [{ name: String, value: String }], default: [] },
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

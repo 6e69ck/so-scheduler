@@ -25,7 +25,23 @@ export default function ViewEventModal({ event, transactions, onClose, onEdit, o
     .filter(tr => tr.category === 'revenue')
     .reduce((acc, curr) => acc + curr.amount, 0);
 
-  const remaining = (event.totalPrice || 0) - totalPaid;
+  const basePrice = event.totalPrice || 0;
+  let surchargesTotal = 0;
+  const computedSurcharges = (event.surcharges || []).map(s => {
+    const valTrim = (s.value || '').trim();
+    let amt = 0;
+    if (valTrim.endsWith('%')) {
+      const percent = parseFloat(valTrim.slice(0, -1)) || 0;
+      amt = (basePrice * percent) / 100;
+    } else {
+      amt = parseFloat(valTrim) || 0;
+    }
+    surchargesTotal += amt;
+    return { name: s.name, value: s.value, calculatedAmount: amt };
+  });
+
+  const visualTotalPrice = basePrice + surchargesTotal;
+  const remaining = visualTotalPrice - totalPaid;
 
   const openInvoice = (hash: string) => {
     const url = `/${window.location.pathname.split('/')[1]}/inv/${hash}`;
@@ -110,14 +126,39 @@ export default function ViewEventModal({ event, transactions, onClose, onEdit, o
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 bg-crust p-4 rounded-xl border border-surface0">
-            <div className="flex flex-col">
-              <span className="text-[9px] uppercase font-black text-subtext0">{t('totalPrice')}</span>
-              <span className="text-sm font-black">${event.totalPrice?.toFixed(2)}</span>
+          <div className="bg-crust p-4 rounded-xl border border-surface0 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col">
+                <span className="text-[9px] uppercase font-black text-subtext0">Contract Amount</span>
+                <span className="text-sm font-black">${basePrice.toFixed(2)}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[9px] uppercase font-black text-subtext0">{t('paidBalance')}</span>
+                <span className="text-sm font-black text-green">${totalPaid.toFixed(2)}</span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-[9px] uppercase font-black text-subtext0">{t('paidBalance')}</span>
-              <span className="text-sm font-black text-green">${totalPaid.toFixed(2)}</span>
+
+            {computedSurcharges.length > 0 && (
+              <div className="border-t border-surface0/60 pt-2.5 space-y-1.5 text-[11px]">
+                <span className="text-[9px] uppercase font-black text-subtext0 block">{t('surcharges')}</span>
+                {computedSurcharges.map((s, idx) => (
+                  <div key={idx} className="flex justify-between text-subtext1">
+                    <span>{s.name} ({s.value})</span>
+                    <span className="font-semibold">+${s.calculatedAmount.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="border-t border-surface0 pt-2.5 grid grid-cols-2 gap-3">
+              <div className="flex flex-col">
+                <span className="text-[9px] uppercase font-black text-subtext0">{t('totalPrice')} (Visual)</span>
+                <span className="text-sm font-black text-text">${visualTotalPrice.toFixed(2)}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[9px] uppercase font-black text-subtext0">{t('remainingBalance')}</span>
+                <span className="text-sm font-black text-accent">${remaining.toFixed(2)}</span>
+              </div>
             </div>
           </div>
 

@@ -51,13 +51,28 @@ export default async function InvoicePage(props: { params: Promise<{ id: string 
   const invoiceType = isDeposit ? 'Deposit' : 'Remaining Balance';
   const idSuffix = isDeposit ? 'a' : 'b';
   
-  const totalPrice = event.totalPrice || 0;
+  const basePrice = event.totalPrice || 0;
+  let surchargesTotal = 0;
+  const computedSurcharges = (event.surcharges || []).map((s: any) => {
+    const valTrim = (s.value || '').trim();
+    let amt = 0;
+    if (valTrim.endsWith('%')) {
+      const percent = parseFloat(valTrim.slice(0, -1)) || 0;
+      amt = (basePrice * percent) / 100;
+    } else {
+      amt = parseFloat(valTrim) || 0;
+    }
+    surchargesTotal += amt;
+    return { name: s.name, value: s.value, calculatedAmount: amt };
+  });
+
+  const visualTotalPrice = basePrice + surchargesTotal;
   const paidBalance = event.paidBalance || 0;
   let amountDue = 0;
   if (isDeposit) {
-    amountDue = totalPrice * 0.25;
+    amountDue = basePrice * 0.25;
   } else {
-    amountDue = totalPrice - paidBalance;
+    amountDue = visualTotalPrice - paidBalance;
   }
 
   // Format date correctly from stored string mapping to UTC
@@ -178,18 +193,40 @@ export default async function InvoicePage(props: { params: Promise<{ id: string 
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-gray-50">
-                  <td className="py-6">
-                    <div className="font-bold text-gray-900 text-base">{invoiceType}</div>
-                    <div className="text-[10px] text-gray-400 mt-2 font-medium uppercase tracking-tight">
-                      {isDeposit 
-                        ? `Calculated as 25% of the total amount ($${totalPrice.toFixed(2)})`
-                        : `Calculated as total amount ($${totalPrice.toFixed(2)}) minus paid balance ($${paidBalance.toFixed(2)})`
-                      }
-                    </div>
-                  </td>
-                  <td className="py-6 text-right font-bold text-gray-900 text-xl">${amountDue.toFixed(2)}</td>
-                </tr>
+                {isDeposit ? (
+                  <tr className="border-b border-gray-50">
+                    <td className="py-6">
+                      <div className="font-bold text-gray-900 text-base">{invoiceType}</div>
+                      <div className="text-[10px] text-gray-400 mt-2 font-medium uppercase tracking-tight">
+                        Calculated as 25% of the contract amount (${basePrice.toFixed(2)})
+                      </div>
+                    </td>
+                    <td className="py-6 text-right font-bold text-gray-900 text-xl">${amountDue.toFixed(2)}</td>
+                  </tr>
+                ) : (
+                  <>
+                    <tr className="border-b border-gray-50">
+                      <td className="py-6">
+                        <div className="font-bold text-gray-900 text-base">Remaining Contract Balance</div>
+                        <div className="text-[10px] text-gray-400 mt-2 font-medium uppercase tracking-tight">
+                          Calculated as contract amount (${basePrice.toFixed(2)}) minus paid balance (${paidBalance.toFixed(2)})
+                        </div>
+                      </td>
+                      <td className="py-6 text-right font-bold text-gray-900 text-xl">${(basePrice - paidBalance).toFixed(2)}</td>
+                    </tr>
+                    {computedSurcharges.map((s: any, idx: number) => (
+                      <tr key={idx} className="border-b border-gray-50">
+                        <td className="py-6">
+                          <div className="font-bold text-gray-900 text-base">{s.name} Surcharge</div>
+                          <div className="text-[10px] text-gray-400 mt-2 font-medium uppercase tracking-tight">
+                            Surcharge value: {s.value}
+                          </div>
+                        </td>
+                        <td className="py-6 text-right font-bold text-gray-900 text-xl">${s.calculatedAmount.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </>
+                )}
               </tbody>
             </table>
           </div>

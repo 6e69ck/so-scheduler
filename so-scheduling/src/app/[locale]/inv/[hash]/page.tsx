@@ -81,6 +81,21 @@ export default function InvoicePage() {
   let lineItems: { desc: string, subtext?: string, amount: number }[] = [];
   let finalDue = 0;
 
+  const basePrice = snapshot.totalPrice || 0;
+  let surchargesTotal = 0;
+  const computedSurcharges = (snapshot.surcharges || []).map((s: any) => {
+    const valTrim = (s.value || '').trim();
+    let amt = 0;
+    if (valTrim.endsWith('%')) {
+      const percent = parseFloat(valTrim.slice(0, -1)) || 0;
+      amt = (basePrice * percent) / 100;
+    } else {
+      amt = parseFloat(valTrim) || 0;
+    }
+    surchargesTotal += amt;
+    return { name: s.name, value: s.value, calculatedAmount: amt };
+  });
+
   if (type === 'deposit') {
     lineItems = [{
       desc: `Security Deposit`,
@@ -89,12 +104,19 @@ export default function InvoicePage() {
     }];
     finalDue = agreedTotal * 0.25;
   } else if (type === 'remaining') {
-    lineItems = [{
-      desc: `Final Performance Balance`,
-      subtext: `75% of Agreed Contract Total ($${agreedTotal.toFixed(2)})`,
-      amount: agreedTotal * 0.75
-    }];
-    finalDue = agreedTotal * 0.75;
+    lineItems = [
+      {
+        desc: `Final Performance Balance`,
+        subtext: `75% of Agreed Contract Total ($${agreedTotal.toFixed(2)})`,
+        amount: agreedTotal * 0.75
+      },
+      ...computedSurcharges.map(s => ({
+        desc: `${s.name} Surcharge`,
+        subtext: `Surcharge value: ${s.value}`,
+        amount: s.calculatedAmount
+      }))
+    ];
+    finalDue = agreedTotal * 0.75 + surchargesTotal;
   } else if (type === 'custom') {
     lineItems = (customLineItems || []).map(li => ({ desc: li.description, amount: li.amount }));
     finalDue = customTotal || lineItems.reduce((acc, curr) => acc + curr.amount, 0);

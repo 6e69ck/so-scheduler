@@ -74,6 +74,7 @@ export default function EventModal({ event, events, transactions, initialRange, 
         clientName: event.clientName || '',
         companyName: event.companyName || '',
         billingAddress: event.billingAddress || '',
+        surcharges: event.surcharges || [],
       };
     }
     return {
@@ -81,7 +82,7 @@ export default function EventModal({ event, events, transactions, initialRange, 
       startTime: getInitialTime(initialRange?.start, '10:00'),
       endTime: getInitialTime(initialRange?.end, '11:00'),
       billingAddress: '', location: '', notes: '', status: 'None', salesAssoc: '', clientPhone: '', clientEmail: '',
-      totalPrice: 0, paidBalance: 0, gear: [], staff: [], neededPeople: 0, linkedId: ''
+      totalPrice: 0, paidBalance: 0, gear: [], staff: [], neededPeople: 0, linkedId: '', surcharges: []
     };
   });
 
@@ -96,6 +97,7 @@ export default function EventModal({ event, events, transactions, initialRange, 
         clientName: event.clientName || '',
         companyName: event.companyName || '',
         billingAddress: event.billingAddress || '',
+        surcharges: event.surcharges || [],
       });
       setTotalPriceStr(event.totalPrice?.toString() || '');
     }
@@ -212,6 +214,28 @@ export default function EventModal({ event, events, transactions, initialRange, 
     setFormData({ ...formData, staff: (formData.staff || []).filter(s => s !== item) });
   };
 
+  const handleAddSurcharge = () => {
+    setFormData(prev => ({
+      ...prev,
+      surcharges: [...(prev.surcharges || []), { name: '', value: '' }]
+    }));
+  };
+
+  const handleSurchargeChange = (index: number, field: 'name' | 'value', val: string) => {
+    setFormData(prev => {
+      const list = [...(prev.surcharges || [])];
+      list[index] = { ...list[index], [field]: val };
+      return { ...prev, surcharges: list };
+    });
+  };
+
+  const handleRemoveSurcharge = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      surcharges: (prev.surcharges || []).filter((_, i) => i !== index)
+    }));
+  };
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -259,13 +283,14 @@ export default function EventModal({ event, events, transactions, initialRange, 
         salesAssoc: parent.salesAssoc,
         eventNumber: parent.eventNumber,
         billingAddress: parent.billingAddress || '',
+        surcharges: parent.surcharges || [],
       }));
       setTotalPriceStr(parent.totalPrice?.toString() || '');
     }
   };
 
   const renderLockedInput = ({ label, name, value, type = 'text', required = false, component: Component = 'input' as any, options = [] }: any) => {
-    const isShared = isLinked && ['clientName', 'companyName', 'clientPhone', 'clientEmail', 'totalPrice', 'salesAssoc', 'billingAddress'].includes(name);
+    const isShared = isLinked && ['clientName', 'companyName', 'clientPhone', 'clientEmail', 'totalPrice', 'salesAssoc', 'billingAddress', 'surcharges'].includes(name);
 
     return (
       <div className={(name === 'show' || name === 'billingAddress') ? 'md:col-span-2' : ''}>
@@ -422,17 +447,71 @@ export default function EventModal({ event, events, transactions, initialRange, 
                 Contract Amount / {t('totalPrice')} ($)
                 {isLinked && <LinkIcon className="w-3 h-3 text-accent" />}
               </label>
-              <input
-                type="text"
-                name="totalPrice"
-                value={totalPriceStr}
-                onChange={(e) => setTotalPriceStr(e.target.value)}
-                onBlur={handleTotalPriceBlurOrEnter}
-                onKeyDown={(e) => handleInputKeyDown(e, handleTotalPriceBlurOrEnter)}
-                readOnly={isLinked}
-                className={`w-full bg-surface0 border border-surface1 text-text rounded-lg p-2.5 focus:ring-1 focus:ring-accent focus:border-accent outline-none transition hover:border-surface2 ${isLinked ? 'bg-surface1/50 text-subtext0 cursor-not-allowed opacity-80' : ''}`}
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  name="totalPrice"
+                  value={totalPriceStr}
+                  onChange={(e) => setTotalPriceStr(e.target.value)}
+                  onBlur={handleTotalPriceBlurOrEnter}
+                  onKeyDown={(e) => handleInputKeyDown(e, handleTotalPriceBlurOrEnter)}
+                  readOnly={isLinked}
+                  className={`flex-1 bg-surface0 border border-surface1 text-text rounded-lg p-2.5 focus:ring-1 focus:ring-accent focus:border-accent outline-none transition hover:border-surface2 ${isLinked ? 'bg-surface1/50 text-subtext0 cursor-not-allowed opacity-80' : ''}`}
+                />
+                {!isLinked && (
+                  <button
+                    type="button"
+                    onClick={handleAddSurcharge}
+                    className="px-3.5 bg-accent hover:bg-accent-hover text-crust font-black rounded-lg transition text-lg flex items-center justify-center shrink-0 shadow-md shadow-accent/10"
+                    title="Add Surcharge"
+                  >
+                    +
+                  </button>
+                )}
+              </div>
             </div>
+
+            {formData.surcharges && formData.surcharges.length > 0 && (
+              <div className="md:col-span-2 space-y-3 bg-surface0/20 p-3.5 rounded-xl border border-surface1">
+                <label className="block text-xs font-black uppercase tracking-widest text-subtext1">
+                  {t('surcharges')}
+                </label>
+                <div className="space-y-2">
+                  {formData.surcharges.map((s, idx) => (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        placeholder={t('surchargeName')}
+                        value={s.name}
+                        onChange={(e) => handleSurchargeChange(idx, 'name', e.target.value)}
+                        readOnly={isLinked}
+                        required
+                        className={`flex-1 bg-surface0 border border-surface1 text-text rounded-lg p-2 text-xs focus:ring-1 focus:ring-accent focus:border-accent outline-none transition hover:border-surface2 ${isLinked ? 'bg-surface1/50 text-subtext0 cursor-not-allowed opacity-80' : ''}`}
+                      />
+                      <input
+                        type="text"
+                        placeholder={t('surchargeValue')}
+                        value={s.value}
+                        onChange={(e) => handleSurchargeChange(idx, 'value', e.target.value)}
+                        readOnly={isLinked}
+                        required
+                        className={`w-1/3 bg-surface0 border border-surface1 text-text rounded-lg p-2 text-xs focus:ring-1 focus:ring-accent focus:border-accent outline-none transition hover:border-surface2 ${isLinked ? 'bg-surface1/50 text-subtext0 cursor-not-allowed opacity-80' : ''}`}
+                      />
+                      {!isLinked && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSurcharge(idx)}
+                          className="p-2 bg-red-400/10 text-red-400 border border-red-400/20 rounded-lg hover:bg-red-400/20 transition text-xs font-bold shrink-0"
+                          title="Remove Surcharge"
+                        >
+                          X
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-bold text-subtext1 mb-1">{t('neededPeople')}</label>

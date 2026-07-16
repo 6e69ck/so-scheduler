@@ -138,7 +138,23 @@ export default function SummaryView({ events, transactions, onViewEvent, selecte
               .filter(tr => tr.category === 'revenue')
               .reduce((acc, curr) => acc + curr.amount, 0);
 
-            const remaining = (e.totalPrice || 0) - totalPaid;
+            const basePrice = e.totalPrice || 0;
+            let surchargesTotal = 0;
+            const computedSurcharges = (e.surcharges || []).map(s => {
+              const valTrim = (s.value || '').trim();
+              let amt = 0;
+              if (valTrim.endsWith('%')) {
+                const percent = parseFloat(valTrim.slice(0, -1)) || 0;
+                amt = (basePrice * percent) / 100;
+              } else {
+                amt = parseFloat(valTrim) || 0;
+              }
+              surchargesTotal += amt;
+              return { name: s.name, value: s.value, calculatedAmount: amt };
+            });
+
+            const visualTotalPrice = basePrice + surchargesTotal;
+            const remaining = visualTotalPrice - totalPaid;
             const statusColor = neededCount > 0 && assignedCount < neededCount ? '#f38ba8' : '#a6e3a1';
 
             return (
@@ -194,9 +210,28 @@ export default function SummaryView({ events, transactions, onViewEvent, selecte
                   </div>
 
                   <div className="flex-1 bg-surface0/50 border border-surface1/30 rounded-md p-2 grid grid-cols-2 lg:grid-cols-3 gap-2 items-center">
-                    <div className="flex flex-col">
+                    <div className="flex flex-col group/surcharges relative">
                       <span className="text-[9px] uppercase text-subtext0 font-bold">{t('totalPrice')}</span>
-                      <span className="text-xs font-bold text-text">${e.totalPrice?.toFixed(2) || '0.00'}</span>
+                      <span className="text-xs font-bold text-text hover:underline cursor-help">
+                        ${visualTotalPrice.toFixed(2)}
+                      </span>
+                      {computedSurcharges.length > 0 && (
+                        <div className="absolute bottom-full left-0 mb-1 hidden group-hover/surcharges:block bg-crust border border-surface1 rounded-lg p-2.5 shadow-xl text-[10px] min-w-[180px] z-50 animate-in fade-in duration-200">
+                          <div className="font-bold text-subtext1 border-b border-surface1/50 pb-1 mb-1 uppercase tracking-wider text-[9px]">
+                            Breakdown
+                          </div>
+                          <div className="flex justify-between text-subtext0 mb-1">
+                            <span>Contract:</span>
+                            <span className="font-semibold">${basePrice.toFixed(2)}</span>
+                          </div>
+                          {computedSurcharges.map((s, sIdx) => (
+                            <div key={sIdx} className="flex justify-between text-subtext0">
+                              <span className="truncate max-w-[100px]">{s.name} ({s.value}):</span>
+                              <span className="font-semibold">+${s.calculatedAmount.toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-col">
                       <span className="text-[9px] uppercase text-subtext0 font-bold">{t('paidBalance')}</span>

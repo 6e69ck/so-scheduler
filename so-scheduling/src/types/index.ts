@@ -20,6 +20,7 @@ export interface EventType {
   eventNumber?: number;
   transactions?: TransactionType[];
   linkedId?: string;
+  surcharges?: { name: string, value: string }[];
 }
 
 export type TransactionAccount = 'Bank' | 'Member Reimbursements' | 'Fees' | 'Tips';
