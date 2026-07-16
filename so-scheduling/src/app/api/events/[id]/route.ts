@@ -60,7 +60,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     // Cascade updates to all linked shows if shared fields were updated
-    const parentId = updatedEvent.linkedId || updatedEvent._id;
+    const parentId = String(updatedEvent.linkedId || updatedEvent._id);
     const sharedFields = {
       clientName: updatedEvent.clientName,
       companyName: updatedEvent.companyName,
@@ -77,7 +77,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     // Update parent and all children
     await Event.updateMany(
-      { $or: [{ _id: parentId }, { linkedId: parentId }] },
+      { $or: [{ _id: parentId }, { linkedId: parentId }] } as any,
       { $set: sharedFields }
     );
 

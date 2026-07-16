@@ -109,7 +109,6 @@ export default function InvoicePage() {
         const isPercent = (s.value || '').trim().endsWith('%');
         return {
           desc: `${s.name} Surcharge${isPercent ? ` (${s.value})` : ''}`,
-          subtext: `Surcharge value: ${s.value}`,
           amount: s.calculatedAmount
         };
       })

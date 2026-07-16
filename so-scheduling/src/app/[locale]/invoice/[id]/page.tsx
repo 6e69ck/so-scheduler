@@ -213,9 +213,6 @@ export default async function InvoicePage(props: { params: Promise<{ id: string 
                         <div className="font-bold text-gray-900 text-base">
                           {s.name} Surcharge{isPercent ? ` (${s.value})` : ''}
                         </div>
-                        <div className="text-[10px] text-gray-400 mt-2 font-medium uppercase tracking-tight">
-                          Surcharge value: {s.value}
-                        </div>
                       </td>
                       <td className="py-6 text-right font-bold text-gray-900 text-xl">${s.calculatedAmount.toFixed(2)}</td>
                     </tr>
