@@ -6,7 +6,7 @@ set -e
 # --- Configuration ---
 ADMIN_PORT=3003
 VIEWER_PORT=3004
-HUB_PORT=3005
+HUB_PORT=3006
 
 ADMIN_NAME="so-admin"
 VIEWER_NAME="so-viewer"
