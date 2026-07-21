@@ -27,7 +27,7 @@ export async function POST(
       return NextResponse.json({ error: 'Staff member already added' }, { status: 400 });
     }
 
-    event.staff.push(name.trim());
+    event.staff.push(normalizedName);
     await event.save();
 
     return NextResponse.json(event);

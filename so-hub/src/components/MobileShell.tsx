@@ -28,15 +28,19 @@ export default function MobileShell({ initialEvents }: MobileShellProps) {
 
   // Load saved name from localStorage
   useEffect(() => {
-    const savedName = localStorage.getItem('so_hub_user_name') || '';
+    const savedName = (localStorage.getItem('so_hub_user_name') || '').trim().toLowerCase();
     setUserName(savedName);
+    if (savedName) {
+      localStorage.setItem('so_hub_user_name', savedName);
+    }
     setIsInitialized(true);
   }, []);
 
   // Save name helper
   const handleSaveName = (name: string) => {
-    setUserName(name);
-    localStorage.setItem('so_hub_user_name', name);
+    const lowerName = name.trim().toLowerCase();
+    setUserName(lowerName);
+    localStorage.setItem('so_hub_user_name', lowerName);
   };
 
   // Check if current user has an active show TODAY

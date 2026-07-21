@@ -25,7 +25,7 @@ export default function SettingsDrawer({ isOpen, onClose, userName, onSaveName }
   const handleSaveName = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nameInput.trim()) return;
-    onSaveName(nameInput.trim());
+    onSaveName(nameInput.trim().toLowerCase());
     onClose();
   };
 

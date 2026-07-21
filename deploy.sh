@@ -30,6 +30,14 @@ echo -e "${BLUE}>>> Pulling latest changes from GitHub...${NC}"
 cd "$ROOT_DIR"
 git pull origin main || true
 
+# Symlink .env to all 3 sub-apps
+echo -e "${BLUE}>>> Linking .env to all 3 sub-apps...${NC}"
+for app in so-scheduling so-scheduling-viewer so-hub; do
+    if [ -d "$ROOT_DIR/$app" ]; then
+        ln -sf "$ROOT_DIR/.env" "$ROOT_DIR/$app/.env"
+    fi
+done
+
 # 2. Setup so-scheduling (Admin)
 echo -e "${BLUE}>>> Building Admin App (so-scheduling)...${NC}"
 cd "$ROOT_DIR/so-scheduling"

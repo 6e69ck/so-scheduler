@@ -15,7 +15,7 @@ export default function OnboardingModal({ onSaveName }: OnboardingModalProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputName.trim()) return;
-    onSaveName(inputName.trim());
+    onSaveName(inputName.trim().toLowerCase());
   };
 
   return (
