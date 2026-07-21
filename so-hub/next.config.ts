@@ -5,8 +5,8 @@ import path from 'path';
 
 // Robustly load global root workspace .env (/home/nick/code/soaring-eagles/.env)
 const cwd = process.cwd();
-loadEnvConfig(path.resolve(cwd, '../..'));
 loadEnvConfig(path.resolve(cwd, '..'));
+loadEnvConfig(path.resolve(cwd, '../..'));
 loadEnvConfig(cwd);
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
