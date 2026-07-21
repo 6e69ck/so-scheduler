@@ -21,6 +21,10 @@ export async function POST(
       return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
 
+    if (event.status !== 'Confirmed') {
+      return NextResponse.json({ error: 'Sign-ups are only allowed for confirmed shows' }, { status: 400 });
+    }
+
     const normalizedName = name.trim().toLowerCase();
     
     if (event.staff.some(s => s.trim().toLowerCase() === normalizedName)) {

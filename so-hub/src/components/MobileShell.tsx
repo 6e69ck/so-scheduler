@@ -126,8 +126,8 @@ export default function MobileShell({ initialEvents }: MobileShellProps) {
     const isSignedUp = e.staff && e.staff.some(s => s.trim().toLowerCase() === userName.trim().toLowerCase());
     const needed = e.neededPeople || 0;
     const currentStaffCount = e.staff ? e.staff.length : 0;
-    const isFutureOrToday = moment.utc(e.date).isSameOrAfter(moment.utc().startOf('day'), 'day');
-    return isFutureOrToday && !isSignedUp && (needed === 0 || currentStaffCount < needed);
+    const isConfirmed = e.status === 'Confirmed';
+    return isConfirmed && isFutureOrToday && !isSignedUp && (needed === 0 || currentStaffCount < needed);
   }).length;
 
   if (!isInitialized) return null;

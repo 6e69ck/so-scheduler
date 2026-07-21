@@ -26,8 +26,10 @@ export default function OpenShowsView({ events, userName, onSignUp }: OpenShowsV
     const eventMoment = moment.utc(e.date);
     const isFutureOrToday = eventMoment.isSameOrAfter(moment.utc().startOf('day'), 'day');
     
-    // Include if show is in the future/today, user is not signed up, and staff is still needed
-    return isFutureOrToday && !isSignedUp && (needed === 0 || currentStaffCount < needed);
+    const isConfirmed = e.status === 'Confirmed';
+    
+    // Include if show is Confirmed, in the future/today, user is not signed up, and staff is still needed
+    return isConfirmed && isFutureOrToday && !isSignedUp && (needed === 0 || currentStaffCount < needed);
   }).sort((a, b) => {
     const dateA = moment.utc(a.date).format('YYYY-MM-DD');
     const dateB = moment.utc(b.date).format('YYYY-MM-DD');
