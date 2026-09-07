@@ -25,7 +25,7 @@ async function dbConnect() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      dbName: process.env.NODE_ENV === 'production' ? 'prod' : 'dev',
+      dbName: process.env.NODE_ENV == 'production' ? 'prod' : 'dev',
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
@@ -36,7 +36,7 @@ async function dbConnect() {
       return mongoose;
     });
   }
-  
+
   try {
     cached.conn = await cached.promise;
   } catch (e) {
