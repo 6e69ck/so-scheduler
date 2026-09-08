@@ -2,6 +2,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
+import PwaRegister from '@/components/PwaRegister';
 import "../globals.css";
 
 export const metadata = {
@@ -14,8 +15,8 @@ export const metadata = {
     title: "Soaring Eagles Hub",
   },
   icons: {
-    icon: "/logo.jpg",
-    apple: "/logo.jpg",
+    icon: "/icon-192.png",
+    apple: "/apple-touch-icon.png",
   },
   robots: {
     index: false,
@@ -41,6 +42,7 @@ export default async function LocaleLayout({
   return (
     <html lang={locale}>
       <body className="antialiased bg-[#11111b] text-[#cdd6f4]">
+        <PwaRegister />
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>

@@ -11,6 +11,7 @@ import {
   Download,
   X,
   Loader2,
+  MoreVertical,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
@@ -42,9 +43,23 @@ export default function NotificationPromptModal({
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
-    // Capture Android beforeinstallprompt event if fired
+    // 1. Check if window already captured beforeinstallprompt
+    if (typeof window !== 'undefined' && (window as any).deferredInstallPrompt) {
+      setDeferredPrompt((window as any).deferredInstallPrompt);
+    }
+
+    // 2. Listen to custom event dispatched by PwaRegister
+    const handlePromptReady = () => {
+      if ((window as any).deferredInstallPrompt) {
+        setDeferredPrompt((window as any).deferredInstallPrompt);
+      }
+    };
+    window.addEventListener('pwa_prompt_ready', handlePromptReady);
+
+    // 3. Fallback direct beforeinstallprompt listener
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
+      (window as any).deferredInstallPrompt = e;
       setDeferredPrompt(e);
     };
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
@@ -61,6 +76,7 @@ export default function NotificationPromptModal({
     }
 
     return () => {
+      window.removeEventListener('pwa_prompt_ready', handlePromptReady);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
     };
   }, []);
@@ -69,10 +85,17 @@ export default function NotificationPromptModal({
     setLoading(true);
     setErrorMsg(null);
     try {
-      // If on Android and beforeinstallprompt is available, trigger PWA install prompt
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        setDeferredPrompt(null);
+      // If on Android, trigger PWA install prompt if available
+      const promptToUse = deferredPrompt || (typeof window !== 'undefined' ? (window as any).deferredInstallPrompt : null);
+      if (promptToUse) {
+        try {
+          await promptToUse.prompt();
+          await promptToUse.userChoice;
+          (window as any).deferredInstallPrompt = null;
+          setDeferredPrompt(null);
+        } catch (promptErr) {
+          console.warn('Native install prompt failed or dismissed:', promptErr);
+        }
       }
 
       const res = await subscribeUserToPush(userName);
@@ -189,6 +212,32 @@ export default function NotificationPromptModal({
               </p>
             </div>
 
+            {/* If native install prompt event is not directly available, provide the 2-step menu guidance */}
+            {!deferredPrompt && (
+              <div className="bg-[#11111b] border border-[#313244] rounded-xl p-3.5 space-y-2 text-xs text-[#cdd6f4]">
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#cba6f7]/20 text-[#cba6f7] font-black text-[11px] flex items-center justify-center shrink-0 mt-0.5">
+                    1
+                  </span>
+                  <span>
+                    {t('androidStep1')}{' '}
+                    <strong className="text-[#cba6f7] inline-flex items-center gap-0.5 font-semibold">
+                      <MoreVertical className="w-3.5 h-3.5 inline" /> {t('androidMenuBtn')}
+                    </strong>
+                  </span>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#cba6f7]/20 text-[#cba6f7] font-black text-[11px] flex items-center justify-center shrink-0 mt-0.5">
+                    2
+                  </span>
+                  <span>
+                    {t('androidStep2')}{' '}
+                    <strong className="text-[#cba6f7] font-semibold">{t('androidInstallBtn')}</strong>
+                  </span>
+                </div>
+              </div>
+            )}
+
             {errorMsg && (
               <div className="p-3 rounded-xl bg-[#f38ba8]/10 border border-[#f38ba8]/20 text-xs text-[#f38ba8] text-center">
                 {errorMsg}
@@ -209,7 +258,7 @@ export default function NotificationPromptModal({
                 ) : (
                   <>
                     <Download className="w-4 h-4" />
-                    <span>{t('installAndEnableBtn')}</span>
+                    <span>{deferredPrompt ? t('installAndEnableBtn') : t('enableNotificationsBtn')}</span>
                   </>
                 )}
               </button>

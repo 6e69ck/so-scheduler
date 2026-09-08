@@ -8,6 +8,11 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
+// Passthrough fetch handler required by Chromium for PWA installability
+self.addEventListener('fetch', (event) => {
+  // Allow default network fetch
+});
+
 self.addEventListener('push', (event) => {
   let data = {};
   if (event.data) {
@@ -21,8 +26,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'Soaring Eagles Hub';
   const options = {
     body: data.body || 'A new show was just published! Tap to open the Hub.',
-    icon: data.icon || '/logo.jpg',
-    badge: '/logo.jpg',
+    icon: data.icon || '/icon-192.png',
+    badge: '/icon-192.png',
     data: {
       url: data.url || '/',
       eventId: data.eventId,
