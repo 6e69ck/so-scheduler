@@ -23,6 +23,8 @@ export interface IEvent extends mongoose.Document {
   surcharges?: { name: string, value: string }[];
   billingName?: string;
   billingPhone?: string;
+  isPublished?: boolean;
+  publishedAt?: Date;
 }
 
 const EventSchema = new mongoose.Schema<IEvent>({
@@ -48,6 +50,8 @@ const EventSchema = new mongoose.Schema<IEvent>({
   eventNumber: { type: Number },
   linkedId: { type: String, default: null },
   surcharges: { type: [{ name: String, value: String }], default: [] },
+  isPublished: { type: Boolean, default: false },
+  publishedAt: { type: Date },
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

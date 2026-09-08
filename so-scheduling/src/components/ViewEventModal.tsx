@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { EventType, TransactionType, InvoiceLineItem } from '@/types';
-import { X, Calendar as CalendarIcon, MapPin, Phone, Mail, Clock, Package, StickyNote, FileText, ExternalLink, RefreshCw, Plus, Edit2, Wallet, DollarSign, Users } from 'lucide-react';
+import { X, Calendar as CalendarIcon, MapPin, Phone, Mail, Clock, Package, StickyNote, FileText, ExternalLink, RefreshCw, Plus, Edit2, Wallet, DollarSign, Users, Send, Loader2 } from 'lucide-react';
 import moment from 'moment';
 import { useTranslations } from 'next-intl';
 import CustomInvoiceModal from './CustomInvoiceModal';
@@ -18,6 +18,36 @@ interface Props {
 export default function ViewEventModal({ event, transactions, onClose, onEdit, onRefresh }: Props) {
   const t = useTranslations('Common');
   const [showCustomModal, setShowCustomModal] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishMsg, setPublishMsg] = useState<string | null>(null);
+
+  const handlePublish = async () => {
+    if (!event?._id) return;
+    const confirmMsg = event.isPublished
+      ? "This show was already published. Re-send push notification to all team members on HUB?"
+      : "Publish this show to HUB and send push notifications to all team members?";
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsPublishing(true);
+    setPublishMsg(null);
+    try {
+      const res = await fetch(`/api/events/${event._id}/publish`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPublishMsg(`Published! Sent to ${data.sentCount} of ${data.totalSubscribers} devices.`);
+        onRefresh();
+        setTimeout(() => setPublishMsg(null), 5000);
+      } else {
+        alert(data.error || 'Failed to publish event');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error publishing event');
+    } finally {
+      setIsPublishing(false);
+    }
+  };
 
   const formatPhone = (phone: string) => {
     if (!phone) return '';
@@ -251,19 +281,34 @@ export default function ViewEventModal({ event, transactions, onClose, onEdit, o
           </div>
         </div>
 
-        <div className="p-5 border-t border-surface0 bg-mantle grid grid-cols-3 gap-3 shrink-0">
-          <button onClick={() => onEdit(event)} className="col-span-3 py-3 bg-surface0 hover:bg-surface1 border border-surface1 rounded-xl font-black uppercase text-xs tracking-widest transition flex items-center justify-center gap-2">
-            <Edit2 className="w-3 h-3" /> {t('editDetails')}
-          </button>
-          <button onClick={() => generateInvoice('deposit')} className="flex items-center justify-center gap-2 py-3 bg-green/10 text-green border border-green/20 hover:bg-green/20 rounded-xl font-black uppercase text-[10px] tracking-widest transition">
-            <FileText className="w-3 h-3" /> {t('depositInv')}
-          </button>
-          <button onClick={() => generateInvoice('remaining')} className="flex items-center justify-center gap-2 py-3 bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 rounded-xl font-black uppercase text-[10px] tracking-widest transition">
-            <FileText className="w-3 h-3" /> {t('remInv')}
-          </button>
-          <button onClick={() => setShowCustomModal(true)} className="flex items-center justify-center gap-2 py-3 bg-blue/10 text-blue border border-blue/20 hover:bg-blue/20 rounded-xl font-black uppercase text-[10px] tracking-widest transition">
-            <Plus className="w-3 h-3" /> Custom
-          </button>
+        <div className="p-5 border-t border-surface0 bg-mantle space-y-3 shrink-0">
+          {publishMsg && (
+            <div className="p-2.5 rounded-lg bg-[#a6e3a1]/15 border border-[#a6e3a1]/30 text-[#a6e3a1] text-xs font-bold text-center">
+              {publishMsg}
+            </div>
+          )}
+          <div className="grid grid-cols-4 gap-2">
+            <button onClick={() => onEdit(event)} className="col-span-2 py-3 bg-surface0 hover:bg-surface1 border border-surface1 rounded-xl font-black uppercase text-xs tracking-widest transition flex items-center justify-center gap-2">
+              <Edit2 className="w-3 h-3" /> {t('editDetails')}
+            </button>
+            <button
+              onClick={handlePublish}
+              disabled={isPublishing}
+              className="col-span-2 py-3 bg-[#cba6f7]/15 hover:bg-[#cba6f7]/25 text-[#cba6f7] border border-[#cba6f7]/30 rounded-xl font-black uppercase text-xs tracking-widest transition flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isPublishing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+              <span>{event.isPublished ? t('republish') : t('publishToHub')}</span>
+            </button>
+            <button onClick={() => generateInvoice('deposit')} className="flex items-center justify-center gap-1.5 py-2.5 bg-green/10 text-green border border-green/20 hover:bg-green/20 rounded-xl font-black uppercase text-[10px] tracking-widest transition">
+              <FileText className="w-3 h-3" /> {t('depositInv')}
+            </button>
+            <button onClick={() => generateInvoice('remaining')} className="flex items-center justify-center gap-1.5 py-2.5 bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 rounded-xl font-black uppercase text-[10px] tracking-widest transition">
+              <FileText className="w-3 h-3" /> {t('remInv')}
+            </button>
+            <button onClick={() => setShowCustomModal(true)} className="col-span-2 flex items-center justify-center gap-1.5 py-2.5 bg-blue/10 text-blue border border-blue/20 hover:bg-blue/20 rounded-xl font-black uppercase text-[10px] tracking-widest transition">
+              <Plus className="w-3 h-3" /> Custom
+            </button>
+          </div>
         </div>
       </div>
 

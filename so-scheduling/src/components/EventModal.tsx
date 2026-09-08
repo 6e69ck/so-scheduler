@@ -2,7 +2,7 @@
 
 import React, { useState, KeyboardEvent } from 'react';
 import { EventType, TransactionType } from '@/types';
-import { X, GripVertical, Loader2, Link as LinkIcon, AlertCircle } from 'lucide-react';
+import { X, GripVertical, Loader2, Link as LinkIcon, AlertCircle, Send, CheckCircle2 } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -112,6 +112,40 @@ export default function EventModal({ event, events, transactions, initialRange, 
   const [staffInput, setStaffInput] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishSuccessMessage, setPublishSuccessMessage] = useState<string | null>(null);
+
+  const handlePublish = async () => {
+    if (!event?._id) return;
+    const confirmMsg = formData.isPublished
+      ? "This show was already published. Re-send push notification to all team members?"
+      : "Publish this show to Hub and broadcast push notification to all team members?";
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsPublishing(true);
+    setPublishSuccessMessage(null);
+    try {
+      const res = await fetch(`/api/events/${event._id}/publish`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setFormData(prev => ({
+          ...prev,
+          isPublished: true,
+          publishedAt: data.publishedAt || new Date().toISOString(),
+        }));
+        setPublishSuccessMessage(`Broadcast sent to ${data.sentCount} of ${data.totalSubscribers} registered devices!`);
+        setTimeout(() => setPublishSuccessMessage(null), 6000);
+      } else {
+        alert(data.error || 'Failed to publish event');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error publishing event');
+    } finally {
+      setIsPublishing(false);
+    }
+  };
 
   // No longer using process.env here as it's passed as a prop
 
@@ -588,15 +622,40 @@ export default function EventModal({ event, events, transactions, initialRange, 
             </div>
           </div>
 
+          {publishSuccessMessage && (
+            <div className="mb-3 p-3 rounded-lg bg-[#a6e3a1]/15 border border-[#a6e3a1]/30 text-[#a6e3a1] text-xs font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{publishSuccessMessage}</span>
+            </div>
+          )}
+
           <div className="flex flex-col-reverse sm:flex-row justify-between pt-3 sm:pt-5 border-t border-surface0 gap-3 sm:gap-0 mt-6 bg-mantle">
-            {event && event._id ? (
-              <button type="button" disabled={isSaving || isDeleting} onClick={handleDelete} className="w-full sm:w-auto px-5 py-2.5 bg-[#f38ba8]/10 text-[#f38ba8] border border-[#f38ba8]/20 font-bold rounded-lg hover:bg-[#f38ba8]/20 transition disabled:opacity-50">
-                {isDeleting ? t('loading') : t('deleteEvent')}
-              </button>
-            ) : <div className="hidden sm:block"></div>}
+            <div className="flex items-center gap-2 flex-wrap">
+              {event && event._id ? (
+                <>
+                  <button type="button" disabled={isSaving || isDeleting || isPublishing} onClick={handleDelete} className="px-4 py-2.5 bg-[#f38ba8]/10 text-[#f38ba8] border border-[#f38ba8]/20 font-bold rounded-lg hover:bg-[#f38ba8]/20 transition disabled:opacity-50 text-xs">
+                    {isDeleting ? t('loading') : t('deleteEvent')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isPublishing || isSaving || isDeleting}
+                    onClick={handlePublish}
+                    className="px-4 py-2.5 bg-[#cba6f7]/15 text-[#cba6f7] border border-[#cba6f7]/30 hover:bg-[#cba6f7]/25 font-bold rounded-lg transition disabled:opacity-50 text-xs flex items-center gap-1.5"
+                    title="Send push notification to all team members on HUB"
+                  >
+                    {isPublishing ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Send className="w-3.5 h-3.5" />
+                    )}
+                    <span>{formData.isPublished ? t('republish') : t('publishToHub')}</span>
+                  </button>
+                </>
+              ) : null}
+            </div>
             <div className="flex space-x-3 w-full sm:w-auto">
-              <button type="button" disabled={isSaving || isDeleting} onClick={(e) => { e.preventDefault(); setTimeout(onClose, 0); }} className="flex-1 sm:flex-none px-5 py-2.5 bg-surface0 border border-surface1 text-text font-bold rounded-lg hover:bg-surface1 hover:text-accent transition disabled:opacity-50">{t('cancel')}</button>
-              <button type="submit" disabled={isSaving || isDeleting} className="flex-1 sm:flex-none px-5 py-2.5 bg-accent text-crust font-bold rounded-lg hover:bg-accent-hover shadow-md shadow-accent/10 transition disabled:opacity-50">
+              <button type="button" disabled={isSaving || isDeleting || isPublishing} onClick={(e) => { e.preventDefault(); setTimeout(onClose, 0); }} className="flex-1 sm:flex-none px-5 py-2.5 bg-surface0 border border-surface1 text-text font-bold rounded-lg hover:bg-surface1 hover:text-accent transition disabled:opacity-50">{t('cancel')}</button>
+              <button type="submit" disabled={isSaving || isDeleting || isPublishing} className="flex-1 sm:flex-none px-5 py-2.5 bg-accent text-crust font-bold rounded-lg hover:bg-accent-hover shadow-md shadow-accent/10 transition disabled:opacity-50">
                 {isSaving ? t('loading') : t('saveChanges')}
               </button>
             </div>

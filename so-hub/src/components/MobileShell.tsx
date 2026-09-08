@@ -11,6 +11,8 @@ import ReimbursementView from './ReimbursementView';
 import MyScheduleView from './MyScheduleView';
 import OnboardingModal from './OnboardingModal';
 import SettingsDrawer from './SettingsDrawer';
+import NotificationPromptModal from './NotificationPromptModal';
+import { registerServiceWorker, isPushNotificationSupported, getExistingSubscription } from '@/lib/pushClient';
 
 type TabType = 'active' | 'open' | 'reimbursement' | 'schedule';
 
@@ -25,22 +27,61 @@ export default function MobileShell({ initialEvents }: MobileShellProps) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
 
-  // Load saved name from localStorage
+  // Check if push notifications are enabled on this device/browser
+  const checkNotificationStatusAndPrompt = async () => {
+    if (typeof window === 'undefined') return;
+    try {
+      if (isPushNotificationSupported()) {
+        const sub = await getExistingSubscription();
+        if (sub && Notification.permission === 'granted') {
+          // Push notifications already active
+          setShowNotificationPrompt(false);
+          return;
+        }
+      }
+      // If notifications are not enabled, always prompt!
+      setShowNotificationPrompt(true);
+    } catch {
+      setShowNotificationPrompt(true);
+    }
+  };
+
+  // Load saved name and check notification prompt state from localStorage
   useEffect(() => {
+    // Clear legacy flags
+    localStorage.removeItem('so_hub_notifications_prompted');
+    sessionStorage.removeItem('so_hub_notif_session_dismissed');
+
     const savedName = (localStorage.getItem('so_hub_user_name') || '').trim().toLowerCase();
     setUserName(savedName);
     if (savedName) {
       localStorage.setItem('so_hub_user_name', savedName);
+      checkNotificationStatusAndPrompt();
     }
     setIsInitialized(true);
+
+    // Register service worker on app startup
+    registerServiceWorker();
+
+    // Check if opened with ?tab= query parameter
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab') as TabType;
+      if (tabParam && ['active', 'open', 'reimbursement', 'schedule'].includes(tabParam)) {
+        setActiveTab(tabParam);
+      }
+    }
   }, []);
 
-  // Save name helper
+  // Save name helper: prompts for notification if not enabled
   const handleSaveName = (name: string) => {
     const lowerName = name.trim().toLowerCase();
     setUserName(lowerName);
     localStorage.setItem('so_hub_user_name', lowerName);
+    sessionStorage.removeItem('so_hub_notif_session_dismissed');
+    checkNotificationStatusAndPrompt();
   };
 
   // Check if current user has an active show TODAY
@@ -137,6 +178,17 @@ export default function MobileShell({ initialEvents }: MobileShellProps) {
     <div className="min-h-screen bg-[#11111b] text-[#cdd6f4] flex flex-col font-sans selection:bg-[#cba6f7] selection:text-[#11111b] relative">
       {/* Show Onboarding modal if user name is not set */}
       {!userName && <OnboardingModal onSaveName={handleSaveName} />}
+
+      {/* Show Notification prompt modal after entering name */}
+      {userName && showNotificationPrompt && (
+        <NotificationPromptModal
+          userName={userName}
+          onClose={() => setShowNotificationPrompt(false)}
+          onSubscribed={() => triggerToast('Push notifications enabled!')}
+        />
+      )}
+
+
 
       {/* Floating Success Toast Notification */}
       {toastMessage && (
@@ -342,6 +394,9 @@ export default function MobileShell({ initialEvents }: MobileShellProps) {
         onClose={() => setIsSettingsOpen(false)}
         userName={userName}
         onSaveName={handleSaveName}
+        onNotificationsDisabled={() => {
+          setShowNotificationPrompt(true);
+        }}
       />
     </div>
   );

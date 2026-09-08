@@ -24,6 +24,8 @@ export interface EventType {
   paidBalance?: number;
   billingName?: string;
   billingPhone?: string;
+  isPublished?: boolean;
+  publishedAt?: string | Date;
 }
 
 export type TransactionAccount = 'Bank' | 'Member Reimbursements' | 'Fees' | 'Tips';

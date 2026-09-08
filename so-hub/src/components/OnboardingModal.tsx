@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { User, Sparkles, ArrowRight } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { User, Sparkles, ArrowRight, Globe } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
+import { useRouter, usePathname } from '@/i18n/routing';
 
 interface OnboardingModalProps {
   onSaveName: (name: string) => void;
@@ -10,7 +11,14 @@ interface OnboardingModalProps {
 
 export default function OnboardingModal({ onSaveName }: OnboardingModalProps) {
   const t = useTranslations('Hub');
+  const locale = useLocale();
+  const router = useRouter();
+  const pathname = usePathname();
   const [inputName, setInputName] = useState('');
+
+  const handleLanguageChange = (newLocale: 'en' | 'zh') => {
+    router.replace(pathname, { locale: newLocale });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +28,36 @@ export default function OnboardingModal({ onSaveName }: OnboardingModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 bg-[#11111b]/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-[#181825] border border-[#cba6f7]/40 rounded-xl p-6 shadow-2xl space-y-5 animate-scaleIn">
+      <div className="w-full max-w-sm bg-[#181825] border border-[#cba6f7]/40 rounded-xl p-6 shadow-2xl space-y-5 animate-scaleIn relative">
+        {/* Language switcher top corner */}
+        <div className="flex justify-end -mt-1 -mb-2">
+          <div className="flex items-center bg-[#11111b] border border-[#313244] rounded-lg p-0.5 text-xs">
+            <Globe className="w-3.5 h-3.5 text-[#cba6f7] mr-1 ml-1" />
+            <button
+              type="button"
+              onClick={() => handleLanguageChange('en')}
+              className={`px-2 py-0.5 rounded font-bold transition-colors ${
+                locale === 'en'
+                  ? 'bg-[#cba6f7] text-[#11111b]'
+                  : 'text-[#a6adc8] hover:text-[#cdd6f4]'
+              }`}
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              onClick={() => handleLanguageChange('zh')}
+              className={`px-2 py-0.5 rounded font-bold transition-colors ${
+                locale === 'zh'
+                  ? 'bg-[#cba6f7] text-[#11111b]'
+                  : 'text-[#a6adc8] hover:text-[#cdd6f4]'
+              }`}
+            >
+              中文
+            </button>
+          </div>
+        </div>
+
         <div className="text-center space-y-2">
           <div className="w-14 h-14 rounded-xl bg-[#cba6f7]/20 border border-[#cba6f7]/40 flex items-center justify-center mx-auto text-[#cba6f7]">
             <Sparkles className="w-7 h-7" />

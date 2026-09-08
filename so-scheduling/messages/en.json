@@ -62,6 +62,7 @@
     "addRevenue": "Add Revenue",
     "addReimbursement": "Add Reimbursement",
     "revenue": "Revenue",
+    "reimbursement": "Reimbursement",
     "cash": "Cash",
     "cheque": "Cheque",
     "eTransfer": "E-Transfer",
@@ -83,6 +84,16 @@
     },
     "receipt": "Receipt",
     "uploadReceipt": "Upload Receipt",
-    "netProfit": "Net Profit"
+    "netProfit": "Net Profit",
+    "adminAccess": "Admin Access",
+    "adminPrompt": "Please enter the administrative password.",
+    "password": "Password",
+    "signIn": "Sign In",
+    "incorrectPassword": "Incorrect Password",
+    "publishToHub": "Publish to Hub",
+    "republish": "Re-publish & Notify",
+    "customInv": "Custom Inv.",
+    "secureTerminal": "Secure Terminal v1.1.0",
+    "networkError": "Network error. Please try again."
   }
 }

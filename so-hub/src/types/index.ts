@@ -18,4 +18,6 @@ export interface EventType {
   staff: string[];
   neededPeople: number;
   eventNumber?: number;
+  isPublished?: boolean;
+  publishedAt?: string | Date;
 }

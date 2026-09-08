@@ -84,6 +84,16 @@
     },
     "receipt": "收据",
     "uploadReceipt": "上传收据",
-    "netProfit": "净利润"
+    "netProfit": "净利润",
+    "adminAccess": "管理员登录",
+    "adminPrompt": "请输入管理员密码。",
+    "password": "密码",
+    "signIn": "登录",
+    "incorrectPassword": "密码错误",
+    "publishToHub": "发布到 Hub",
+    "republish": "重新发布并通知",
+    "customInv": "自定义账单",
+    "secureTerminal": "安全终端 v1.1.0",
+    "networkError": "网络连接错误，请重试。"
   }
 }

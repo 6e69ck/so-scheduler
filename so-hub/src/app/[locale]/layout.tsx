@@ -7,6 +7,16 @@ import "../globals.css";
 export const metadata = {
   title: "Soaring Eagles Hub",
   description: "Centralized hub for team members (mobile and desktop)",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Soaring Eagles Hub",
+  },
+  icons: {
+    icon: "/logo.jpg",
+    apple: "/logo.jpg",
+  },
   robots: {
     index: false,
     follow: false,
