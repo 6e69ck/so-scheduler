@@ -12,6 +12,7 @@ interface ReimbursementItem {
   name?: string;
   amount?: string;
   status: string;
+  reimbursedBy?: string;
   rawRow: string[];
 }
 
@@ -31,7 +32,7 @@ export default function ReimbursementView({ userName }: ReimbursementViewProps) 
     if (!userName.trim()) return;
     if (isManualRefresh) setRefreshing(true);
     try {
-      const res = await fetch(`/api/reimbursements?user=${encodeURIComponent(userName)}`);
+      const res = await fetch(`/api/reimbursements?user=${encodeURIComponent(userName.trim())}`);
       if (res.ok) {
         const data = await res.json();
         setReimbursements(data.reimbursements || []);
@@ -146,12 +147,19 @@ export default function ReimbursementView({ userName }: ReimbursementViewProps) 
                   )}
                 </div>
 
-                {item.dateRange && (
-                  <div className="flex items-center gap-1.5 pt-2 border-t border-[#313244]/60 text-xs text-[#a6adc8] font-medium">
-                    <Calendar className="w-3.5 h-3.5 text-[#89b4fa]" />
-                    <span>{item.dateRange}</span>
-                  </div>
-                )}
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#313244]/60 text-xs text-[#a6adc8] font-medium">
+                  {item.dateRange ? (
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-[#89b4fa]" />
+                      <span>{item.dateRange}</span>
+                    </div>
+                  ) : <div />}
+                  {item.reimbursedBy && (
+                    <span className="text-[11px] text-[#6c7086]">
+                      By: <span className="text-[#bac2de] font-semibold">{item.reimbursedBy}</span>
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
